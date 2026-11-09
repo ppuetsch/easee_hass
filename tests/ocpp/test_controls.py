@@ -18,6 +18,13 @@ from .fake_charger import FakeEaseeCharger, wait_until
 UNKNOWN_CARD = "NEWCARD1"
 
 
+def state_of(hass: HomeAssistant, entity_id: str) -> str:
+    """State string of an entity that must exist."""
+    state = hass.states.get(entity_id)
+    assert state is not None, entity_id
+    return state.state
+
+
 def entity_id_of(hass: HomeAssistant, platform: str, key: str) -> str:
     """Entity id of an OCPP entity of the test charger."""
     entity_id = er.async_get(hass).async_get_entity_id(platform, DOMAIN, f"{OCPP_SERIAL}_ocpp_{key}")
@@ -41,7 +48,7 @@ async def test_max_current_is_sent_and_kept(hass: HomeAssistant, connect_charger
     await hass.services.async_call("number", "set_value", {ATTR_ENTITY_ID: number, "value": 10}, blocking=True)
 
     assert charger.memory.charging_profiles[-1]["charging_schedule"]["charging_schedule_period"][0]["limit"] == 10
-    assert hass.states.get(number).state == "10.0"
+    assert state_of(hass, number) == "10.0"
     assert hass.data[HUB_DATA_KEY].max_current(OCPP_SERIAL) == 10
 
 
@@ -49,7 +56,7 @@ async def test_configuration_keys_become_entities(hass: HomeAssistant, connect_c
     """Every key read from the charger gets an entity of the matching type."""
     await connected_charger(hass, connect_charger)
 
-    assert hass.states.get(entity_id_of(hass, "switch", "config_LocalAuthorizeOffline")).state == "on"
+    assert state_of(hass, entity_id_of(hass, "switch", "config_LocalAuthorizeOffline")) == "on"
     assert hass.states.get(entity_id_of(hass, "number", "config_HeartbeatInterval")) is not None
     assert hass.states.get(entity_id_of(hass, "text", "config_MeterValuesSampledData")) is not None
     read_only = er.async_get(hass).async_get(entity_id_of(hass, "sensor", "config_NumberOfConnectors"))
@@ -65,7 +72,7 @@ async def test_configuration_switch_writes_the_key(hass: HomeAssistant, connect_
     await hass.services.async_call("switch", "turn_off", {ATTR_ENTITY_ID: switch}, blocking=True)
 
     assert charger.memory.configuration["LocalAuthorizeOffline"] == "false"
-    assert hass.states.get(switch).state == "off"
+    assert state_of(hass, switch) == "off"
 
 
 async def test_charge_and_availability_switches(hass: HomeAssistant, connect_charger: ConnectCharger) -> None:
@@ -126,6 +133,7 @@ async def test_actions(hass: HomeAssistant, connect_charger: ConnectCharger) -> 
     )
     await hass.services.async_call(DOMAIN, "ocpp_clear_charging_profile", {**target, "purpose": "TxDefaultProfile"}, blocking=True)
 
-    assert configuration["configuration"]["HeartbeatInterval"]["value"] == "86400"
+    assert configuration is not None
+    assert configuration["configuration"] == {"HeartbeatInterval": {"value": "86400", "readonly": False}}
     assert version == {"version": 3}
     assert ("ClearChargingProfile", {"charging_profile_purpose": "TxDefaultProfile"}) in charger.memory.commands
