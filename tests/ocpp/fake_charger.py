@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import asyncio
+import base64
 import json
 from dataclasses import dataclass, field
 from typing import Any
@@ -121,3 +122,9 @@ async def wait_until(condition: Any, timeout: float = 5.0) -> None:
     async with asyncio.timeout(timeout):
         while not condition():
             await asyncio.sleep(0.05)
+
+
+def basic_auth(login: str, password: str) -> dict[str, str]:
+    """Authorization header the way the Easee charger sends it."""
+    token = base64.b64encode(f"{login}:{password}".encode()).decode()
+    return {"Authorization": f"Basic {token}"}

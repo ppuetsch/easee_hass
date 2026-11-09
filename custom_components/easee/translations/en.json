@@ -114,6 +114,15 @@
       },
       "update_available": {
         "name": "Update available"
+      },
+      "ocpp_connected": {
+        "name": "OCPP connected"
+      },
+      "ocpp_transaction": {
+        "name": "OCPP session active"
+      },
+      "ocpp_charging": {
+        "name": "OCPP charging"
       }
     },
     "button": {
@@ -308,6 +317,80 @@
       },
       "voltage": {
         "name": "Voltage"
+      },
+      "ocpp_status": {
+        "name": "OCPP status",
+        "state": {
+          "available": "Available",
+          "preparing": "Preparing",
+          "charging": "Charging",
+          "suspendedevse": "Suspended by charger",
+          "suspendedev": "Suspended by vehicle",
+          "finishing": "Finishing",
+          "reserved": "Reserved",
+          "unavailable": "Unavailable",
+          "faulted": "Faulted"
+        }
+      },
+      "ocpp_power": {
+        "name": "OCPP power"
+      },
+      "ocpp_energy": {
+        "name": "OCPP energy meter"
+      },
+      "ocpp_session_energy": {
+        "name": "OCPP session energy"
+      },
+      "ocpp_session_start": {
+        "name": "OCPP session start"
+      },
+      "ocpp_current_offered": {
+        "name": "OCPP current offered"
+      },
+      "ocpp_charging_limit": {
+        "name": "OCPP charging limit"
+      },
+      "ocpp_temperature": {
+        "name": "OCPP temperature"
+      },
+      "ocpp_current_l1": {
+        "name": "OCPP current L1"
+      },
+      "ocpp_current_l2": {
+        "name": "OCPP current L2"
+      },
+      "ocpp_current_l3": {
+        "name": "OCPP current L3"
+      },
+      "ocpp_voltage_l1": {
+        "name": "OCPP voltage L1"
+      },
+      "ocpp_voltage_l2": {
+        "name": "OCPP voltage L2"
+      },
+      "ocpp_voltage_l3": {
+        "name": "OCPP voltage L3"
+      },
+      "ocpp_last_rfid_card": {
+        "name": "OCPP last RFID card"
+      },
+      "ocpp_error_code": {
+        "name": "OCPP error code"
+      },
+      "ocpp_vendor_error_code": {
+        "name": "OCPP vendor error code"
+      },
+      "ocpp_transaction_id": {
+        "name": "OCPP transaction id"
+      },
+      "ocpp_last_message": {
+        "name": "OCPP last message"
+      },
+      "ocpp_meter_value_interval": {
+        "name": "OCPP meter value interval"
+      },
+      "ocpp_firmware": {
+        "name": "OCPP firmware"
       }
     },
     "switch": {

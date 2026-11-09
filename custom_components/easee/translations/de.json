@@ -114,6 +114,15 @@
       },
       "update_available": {
         "name": "Aktualisierung verfügbar"
+      },
+      "ocpp_connected": {
+        "name": "OCPP verbunden"
+      },
+      "ocpp_transaction": {
+        "name": "OCPP-Ladevorgang aktiv"
+      },
+      "ocpp_charging": {
+        "name": "OCPP lädt"
       }
     },
     "button": {
@@ -296,6 +305,80 @@
       },
       "voltage": {
         "name": "Spannung"
+      },
+      "ocpp_status": {
+        "name": "OCPP-Status",
+        "state": {
+          "available": "Verfügbar",
+          "preparing": "Vorbereitung",
+          "charging": "Lädt",
+          "suspendedevse": "Pausiert durch Charger",
+          "suspendedev": "Pausiert durch Fahrzeug",
+          "finishing": "Beendet",
+          "reserved": "Reserviert",
+          "unavailable": "Nicht verfügbar",
+          "faulted": "Fehler"
+        }
+      },
+      "ocpp_power": {
+        "name": "OCPP-Leistung"
+      },
+      "ocpp_energy": {
+        "name": "OCPP-Zählerstand"
+      },
+      "ocpp_session_energy": {
+        "name": "OCPP-Energie Ladevorgang"
+      },
+      "ocpp_session_start": {
+        "name": "OCPP-Beginn Ladevorgang"
+      },
+      "ocpp_current_offered": {
+        "name": "OCPP-angebotener Strom"
+      },
+      "ocpp_charging_limit": {
+        "name": "OCPP-Ladelimit"
+      },
+      "ocpp_temperature": {
+        "name": "OCPP-Temperatur"
+      },
+      "ocpp_current_l1": {
+        "name": "OCPP-Strom L1"
+      },
+      "ocpp_current_l2": {
+        "name": "OCPP-Strom L2"
+      },
+      "ocpp_current_l3": {
+        "name": "OCPP-Strom L3"
+      },
+      "ocpp_voltage_l1": {
+        "name": "OCPP-Spannung L1"
+      },
+      "ocpp_voltage_l2": {
+        "name": "OCPP-Spannung L2"
+      },
+      "ocpp_voltage_l3": {
+        "name": "OCPP-Spannung L3"
+      },
+      "ocpp_last_rfid_card": {
+        "name": "OCPP-letzte RFID-Karte"
+      },
+      "ocpp_error_code": {
+        "name": "OCPP-Fehlercode"
+      },
+      "ocpp_vendor_error_code": {
+        "name": "OCPP-Herstellerfehlercode"
+      },
+      "ocpp_transaction_id": {
+        "name": "OCPP-Transaktions-ID"
+      },
+      "ocpp_last_message": {
+        "name": "OCPP-letzte Nachricht"
+      },
+      "ocpp_meter_value_interval": {
+        "name": "OCPP-Messintervall"
+      },
+      "ocpp_firmware": {
+        "name": "OCPP-Firmware"
       }
     },
     "switch": {

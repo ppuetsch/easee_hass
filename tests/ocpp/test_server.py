@@ -4,9 +4,6 @@ from __future__ import annotations
 
 import asyncio
 from collections.abc import AsyncIterator
-from datetime import timedelta
-
-import base64
 
 from aiohttp import WSServerHandshakeError
 from ocpp.v16 import call
@@ -18,25 +15,11 @@ from custom_components.easee.ocpp.server import HUB_DATA_KEY
 from homeassistant.core import HomeAssistant
 from homeassistant.setup import async_setup_component
 
-from .fake_charger import ClientConnection, FakeEaseeCharger, wait_until
+from .fake_charger import ClientConnection, FakeEaseeCharger, basic_auth, wait_until
 
 SERIAL = "EHTEST01"
 PASSWORD = "secret-password-123"
 ALLOWED_CARD = "ABCD1234"
-
-
-def basic_auth(login: str, password: str) -> dict[str, str]:
-    """Authorization header the way the Easee charger sends it."""
-    token = base64.b64encode(f"{login}:{password}".encode()).decode()
-    return {"Authorization": f"Basic {token}"}
-
-
-@pytest.fixture(autouse=True)
-def no_bootstrap_delay(monkeypatch: pytest.MonkeyPatch) -> None:
-    """Bootstrap immediately instead of waiting for a BootNotification."""
-    monkeypatch.setattr(
-        "custom_components.easee.ocpp.hub.BOOTSTRAP_DELAY_AFTER_CONNECT", timedelta(0)
-    )
 
 
 @pytest.fixture

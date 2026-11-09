@@ -1,0 +1,108 @@
+"""Fixtures: the whole integration with a fake cloud and fake chargers."""
+
+from __future__ import annotations
+
+import asyncio
+from collections.abc import AsyncIterator, Awaitable, Callable
+from datetime import timedelta
+
+from aiohttp import ClientWebSocketResponse
+import pytest
+from pytest_homeassistant_custom_component.common import MockConfigEntry
+
+from custom_components.easee.const import DOMAIN
+from custom_components.easee.ocpp.const import (
+    CONF_ALLOWED_ID_TAGS,
+    CONF_OCPP_PASSWORD,
+    CONF_SERIAL,
+    SUBENTRY_TYPE_OCPP_CHARGER,
+)
+from homeassistant.config_entries import ConfigSubentryData
+from homeassistant.core import HomeAssistant
+
+from .fake_charger import ClientConnection, FakeEaseeCharger, basic_auth
+from .fake_cloud import FakeCloudCharger, FakeController
+
+OCPP_SERIAL = "EHTEST01"
+CLOUD_ONLY_SERIAL = "EHTEST02"
+OCPP_PASSWORD = "secret-password-123"
+ALLOWED_CARD = "ABCD1234"
+
+type ConnectCharger = Callable[[str], Awaitable[FakeEaseeCharger]]
+
+
+@pytest.fixture(autouse=True)
+def no_bootstrap_delay(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Bootstrap immediately instead of waiting for a BootNotification."""
+    monkeypatch.setattr(
+        "custom_components.easee.ocpp.hub.BOOTSTRAP_DELAY_AFTER_CONNECT", timedelta(0)
+    )
+
+
+@pytest.fixture
+def fake_cloud(monkeypatch: pytest.MonkeyPatch) -> type[FakeController]:
+    """Replace the cloud controller; the account has two chargers."""
+    FakeController.chargers = [
+        FakeCloudCharger(OCPP_SERIAL, "Garage"),
+        FakeCloudCharger(CLOUD_ONLY_SERIAL, "Carport"),
+    ]
+    monkeypatch.setattr("custom_components.easee.Controller", FakeController)
+    return FakeController
+
+
+@pytest.fixture
+def config_entry(hass: HomeAssistant) -> MockConfigEntry:
+    """Easee entry with one charger connected via OCPP."""
+    entry = MockConfigEntry(
+        domain=DOMAIN,
+        version=3,
+        data={"username": "user@example.com", "password": "cloud-password"},
+        options={"monitored_sites": ["Home"], CONF_ALLOWED_ID_TAGS: [ALLOWED_CARD]},
+        subentries_data=[
+            ConfigSubentryData(
+                data={CONF_SERIAL: OCPP_SERIAL, CONF_OCPP_PASSWORD: OCPP_PASSWORD},
+                subentry_type=SUBENTRY_TYPE_OCPP_CHARGER,
+                title=f"OCPP Garage ({OCPP_SERIAL})",
+                unique_id=OCPP_SERIAL,
+            )
+        ],
+    )
+    entry.add_to_hass(hass)
+    return entry
+
+
+@pytest.fixture
+async def loaded_entry(
+    hass: HomeAssistant, config_entry: MockConfigEntry, fake_cloud: type[FakeController]
+) -> MockConfigEntry:
+    """The integration, set up."""
+    assert await hass.config_entries.async_setup(config_entry.entry_id)
+    await hass.async_block_till_done()
+    return config_entry
+
+
+@pytest.fixture
+async def connect_charger(
+    loaded_entry: MockConfigEntry, hass_client_no_auth
+) -> AsyncIterator[ConnectCharger]:
+    """Factory that connects a fake charger and runs its message loop."""
+    websockets: list[ClientWebSocketResponse] = []
+    loops: list[asyncio.Task[None]] = []
+
+    async def connect(serial: str) -> FakeEaseeCharger:
+        client = await hass_client_no_auth()
+        websocket = await client.ws_connect(
+            f"/api/easee/ocpp/{serial}",
+            protocols=("ocpp1.6",),
+            headers=basic_auth(serial, OCPP_PASSWORD),
+        )
+        websockets.append(websocket)
+        charger = FakeEaseeCharger(serial, ClientConnection(websocket))
+        loops.append(asyncio.create_task(charger.start()))
+        return charger
+
+    yield connect
+    for loop in loops:
+        loop.cancel()
+    for websocket in websockets:
+        await websocket.close()

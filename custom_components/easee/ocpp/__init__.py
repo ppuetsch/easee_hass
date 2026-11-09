@@ -2,8 +2,12 @@
 
 from __future__ import annotations
 
+from collections.abc import Callable, Iterable
+
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
+from homeassistant.helpers.entity import Entity
+from homeassistant.helpers.entity_platform import AddConfigEntryEntitiesCallback
 
 from .const import (
     CONF_ALLOWED_ID_TAGS,
@@ -12,6 +16,7 @@ from .const import (
     SUBENTRY_TYPE_OCPP_CHARGER,
 )
 from .hub import IdTagWhitelist, OcppChargerConfig, OcppHub
+from .models import Serial
 from .server import HUB_DATA_KEY, OcppWebSocketView
 
 
@@ -47,6 +52,22 @@ async def async_unload_ocpp_hub(hass: HomeAssistant) -> None:
     hub: OcppHub | None = hass.data.pop(HUB_DATA_KEY, None)
     if hub is not None:
         await hub.async_shutdown()
+
+
+def async_add_ocpp_entities(
+    hass: HomeAssistant,
+    async_add_entities: AddConfigEntryEntitiesCallback,
+    entities_for_charger: Callable[[OcppHub, Serial], Iterable[Entity]],
+) -> None:
+    """Add the OCPP entities of every charger, each assigned to its subentry."""
+    hub = get_ocpp_hub(hass)
+    if hub is None:
+        return
+    for serial in hub.serials():
+        async_add_entities(
+            entities_for_charger(hub, serial),
+            config_subentry_id=hub.config(serial).subentry_id,
+        )
 
 
 def get_ocpp_hub(hass: HomeAssistant) -> OcppHub | None:
