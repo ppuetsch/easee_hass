@@ -23,6 +23,11 @@ from homeassistant.const import (
 )
 from homeassistant.helpers.typing import StateType
 
+from homeassistant.config_entries import ConfigEntry
+from homeassistant.core import HomeAssistant
+from homeassistant.helpers.entity_platform import AddConfigEntryEntitiesCallback
+
+from .configuration_entities import ConfigurationKeyEntity, async_add_configuration_entities, is_read_only_key
 from .entity import OcppEntity
 from .hub import OcppHub
 from .models import (
@@ -233,6 +238,24 @@ class OcppLastCardSensor(OcppSensor):
         if attempt is None:
             return None
         return {"accepted": attempt.accepted, "timestamp": attempt.timestamp.isoformat()}
+
+
+class OcppConfigurationSensor(ConfigurationKeyEntity, SensorEntity):
+    """A read-only OCPP configuration key (diagnostic)."""
+
+    description_class = SensorEntityDescription
+
+    @property
+    def native_value(self) -> str | None:
+        """Current value."""
+        return self.configuration_value
+
+
+def async_setup_ocpp_configuration_sensors(
+    hass: HomeAssistant, entry: ConfigEntry, async_add_entities: AddConfigEntryEntitiesCallback
+) -> None:
+    """One diagnostic sensor per read-only configuration key."""
+    async_add_configuration_entities(hass, entry, async_add_entities, is_read_only_key, OcppConfigurationSensor)
 
 
 def ocpp_sensors(hub: OcppHub, serial: Serial) -> list[OcppSensor]:

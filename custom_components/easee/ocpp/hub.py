@@ -14,7 +14,8 @@ from homeassistant.helpers.storage import Store
 from homeassistant.util import dt as dt_util
 
 from .bootstrap import ChargePointBootstrapper
-from .charge_point import CommandFailedError, EaseeChargePoint
+from .authorization import normalised_id_tag
+from .charge_point import CommandFailedError, EaseeChargePoint, IdTagAuthorizer
 from .const import BOOTSTRAP_DELAY_AFTER_CONNECT, SIGNAL_OCPP_STATE_UPDATED
 from .models import ChargePointState, IdTag, Serial
 from .server import AiohttpOcppConnection, BasicCredentials, ConnectionClosedError
@@ -39,19 +40,14 @@ class OcppChargerConfig:
     password: str
 
 
-def normalised_id_tag(id_tag: IdTag) -> str:
-    """Compare card ids case-insensitively and without surrounding blanks."""
-    return id_tag.strip().upper()
-
-
 class IdTagWhitelist:
-    """Allows exactly the configured RFID cards; an empty list rejects every card."""
+    """Allows exactly the given RFID cards; an empty list rejects every card."""
 
     def __init__(self, id_tags: Iterable[IdTag]) -> None:
         """Remember the allowed cards."""
         self._allowed = {normalised_id_tag(tag) for tag in id_tags if tag.strip()}
 
-    def is_allowed(self, id_tag: IdTag) -> bool:
+    def is_allowed(self, serial: Serial, id_tag: IdTag) -> bool:
         """Return True if the card is on the list."""
         return normalised_id_tag(id_tag) in self._allowed
 
@@ -68,12 +64,12 @@ class OcppHub:
         self,
         hass: HomeAssistant,
         chargers: Iterable[OcppChargerConfig],
-        whitelist: IdTagWhitelist,
+        authorizer: IdTagAuthorizer,
     ) -> None:
         """Set up the hub for the configured chargers."""
         self._hass = hass
         self._configs = {config.serial: config for config in chargers}
-        self._whitelist = whitelist
+        self.authorizer = authorizer
         self._states = {serial: ChargePointState(serial) for serial in self._configs}
         self._charge_points: dict[Serial, EaseeChargePoint] = {}
         self._connections: dict[Serial, AiohttpOcppConnection] = {}
@@ -141,13 +137,18 @@ class OcppHub:
         await self._store.async_save(self._max_current)
         self.notify(serial)
 
+    async def async_refresh(self, serial: Serial) -> None:
+        """Re-read status, meter values, limit and configuration."""
+        charge_point = self.charge_point(serial)
+        await ChargePointBootstrapper(charge_point, self.max_current(serial)).refresh()
+
     async def async_serve(self, serial: Serial, connection: AiohttpOcppConnection) -> None:
         """Run one websocket connection until it closes."""
         await self._replace_previous_connection(serial)
         charge_point = EaseeChargePoint(
             self._states[serial],
             connection,
-            self._whitelist,
+            self.authorizer,
             on_state_changed=lambda: self.notify(serial),
             on_boot=lambda: self._start_bootstrap(serial, force=True),
         )

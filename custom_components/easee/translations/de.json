@@ -128,6 +128,21 @@
     "button": {
       "override_schedule": {
         "name": "Zeitplan überschreiben"
+      },
+      "ocpp_soft_reset": {
+        "name": "OCPP-Neustart"
+      },
+      "ocpp_hard_reset": {
+        "name": "OCPP-Hardware-Neustart"
+      },
+      "ocpp_unlock": {
+        "name": "OCPP Kabel entriegeln"
+      },
+      "ocpp_refresh": {
+        "name": "OCPP aktualisieren"
+      },
+      "ocpp_learn_rfid": {
+        "name": "OCPP nächste RFID-Karte anlernen"
       }
     },
     "light": {
@@ -405,6 +420,17 @@
       },
       "weekly_schedule": {
         "name": "wöchentlicher Zeitplan"
+      },
+      "ocpp_available": {
+        "name": "OCPP verfügbar"
+      },
+      "ocpp_charge": {
+        "name": "OCPP laden"
+      }
+    },
+    "number": {
+      "ocpp_max_current": {
+        "name": "OCPP-Maximalstrom"
       }
     }
   },
@@ -759,6 +785,150 @@
         }
       },
       "name": "Smart Charging"
+    },
+    "ocpp_get_configuration": {
+      "name": "OCPP: Konfiguration lesen",
+      "description": "Liest alle Konfigurationsschlüssel oder einen (auch versteckte Easee-Schlüssel wie FreeCharging).",
+      "fields": {
+        "device_id": {
+          "name": "Charger",
+          "description": "Per lokalem OCPP verbundener Charger."
+        },
+        "key": {
+          "name": "Schlüssel",
+          "description": "Nur diesen Schlüssel; leer für alle sichtbaren."
+        }
+      }
+    },
+    "ocpp_change_configuration": {
+      "name": "OCPP: Konfiguration ändern",
+      "description": "Schreibt einen Konfigurationsschlüssel (ChangeConfiguration).",
+      "fields": {
+        "device_id": {
+          "name": "Charger",
+          "description": "Per lokalem OCPP verbundener Charger."
+        },
+        "key": {
+          "name": "Schlüssel",
+          "description": "Konfigurationsschlüssel."
+        },
+        "value": {
+          "name": "Wert",
+          "description": "Neuer Wert als Text."
+        }
+      }
+    },
+    "ocpp_set_charging_profile": {
+      "name": "OCPP: Ladeprofil setzen",
+      "description": "Installiert ein Ladeprofil (SetChargingProfile, bei Easee nur Ampere).",
+      "fields": {
+        "device_id": {
+          "name": "Charger",
+          "description": "Per lokalem OCPP verbundener Charger."
+        },
+        "connector_id": {
+          "name": "Anschluss",
+          "description": "0 = ganzer Charger, 1 = Fahrzeuganschluss."
+        },
+        "charging_profile": {
+          "name": "Ladeprofil",
+          "description": "OCPP-1.6-ChargingProfile-Objekt."
+        }
+      }
+    },
+    "ocpp_clear_charging_profile": {
+      "name": "OCPP: Ladeprofile löschen",
+      "description": "Entfernt Ladeprofile; ohne Kriterien alle.",
+      "fields": {
+        "device_id": {
+          "name": "Charger",
+          "description": "Per lokalem OCPP verbundener Charger."
+        },
+        "profile_id": {
+          "name": "Profil-ID",
+          "description": "Nur dieses Profil."
+        },
+        "connector_id": {
+          "name": "Anschluss",
+          "description": "Nur dieser Anschluss."
+        },
+        "purpose": {
+          "name": "Zweck",
+          "description": "Nur Profile mit diesem Zweck."
+        },
+        "stack_level": {
+          "name": "Stack-Ebene",
+          "description": "Nur diese Ebene."
+        }
+      }
+    },
+    "ocpp_get_composite_schedule": {
+      "name": "OCPP: wirksamen Zeitplan lesen",
+      "description": "Liefert die geltenden Limits (GetCompositeSchedule).",
+      "fields": {
+        "device_id": {
+          "name": "Charger",
+          "description": "Per lokalem OCPP verbundener Charger."
+        },
+        "connector_id": {
+          "name": "Anschluss",
+          "description": "0 = ganzer Charger, 1 = Fahrzeuganschluss."
+        },
+        "duration": {
+          "name": "Dauer",
+          "description": "Zeitraum in Sekunden."
+        }
+      }
+    },
+    "ocpp_trigger_message": {
+      "name": "OCPP: Nachricht anfordern",
+      "description": "Fordert den Charger auf, sofort eine Nachricht zu senden (TriggerMessage).",
+      "fields": {
+        "device_id": {
+          "name": "Charger",
+          "description": "Per lokalem OCPP verbundener Charger."
+        },
+        "message": {
+          "name": "Nachricht",
+          "description": "Zu sendende Nachricht."
+        },
+        "connector_id": {
+          "name": "Anschluss",
+          "description": "Optionaler Anschluss."
+        }
+      }
+    },
+    "ocpp_send_local_list": {
+      "name": "OCPP: lokale Freigabeliste senden",
+      "description": "Karten, die der Charger selbst akzeptiert, solange er Home Assistant nicht erreicht (Easee: max. 10).",
+      "fields": {
+        "device_id": {
+          "name": "Charger",
+          "description": "Per lokalem OCPP verbundener Charger."
+        },
+        "id_tags": {
+          "name": "RFID-Karten",
+          "description": "Karten-IDs."
+        },
+        "version": {
+          "name": "Version",
+          "description": "Listenversion, bei jeder Änderung erhöhen."
+        },
+        "full_update": {
+          "name": "Liste ersetzen",
+          "description": "Liste ersetzen statt ergänzen."
+        }
+      }
+    },
+    "ocpp_get_local_list_version": {
+      "name": "OCPP: Version der lokalen Liste lesen",
+      "description": "Liefert die Version der lokalen Freigabeliste.",
+      "fields": {
+        "device_id": {
+          "name": "Charger",
+          "description": "Per lokalem OCPP verbundener Charger."
+        }
+      }
     }
   },
   "system_health": {

@@ -48,6 +48,12 @@ class ChargePointBootstrapper:
         await self._request_current_status()
         _LOGGER.info("%s: bootstrap finished", self._serial)
 
+    async def refresh(self) -> None:
+        """Re-read everything without changing the configuration."""
+        await self._read_configuration()
+        await self._best_effort("GetCompositeSchedule", self._charge_point.read_composite_limit())
+        await self._request_current_status()
+
     async def _configure_measurands(self) -> None:
         await self._best_effort(
             "MeterValuesSampledData",

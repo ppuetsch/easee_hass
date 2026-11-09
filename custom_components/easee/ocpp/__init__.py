@@ -17,7 +17,8 @@ from .const import (
     SUBENTRY_TYPE_OCPP_CHARGER,
 )
 from .cloud_setup import EaseeOcppCloud
-from .hub import IdTagWhitelist, OcppChargerConfig, OcppHub
+from .authorization import RfidAuthorizer
+from .hub import OcppChargerConfig, OcppHub
 from .models import Serial
 from .removal import async_release_removed_chargers
 from .server import HUB_DATA_KEY, OcppWebSocketView
@@ -42,8 +43,7 @@ def ocpp_charger_configs(entry: ConfigEntry) -> list[OcppChargerConfig]:
 
 async def async_setup_ocpp_hub(hass: HomeAssistant, entry: ConfigEntry) -> OcppHub:
     """Create the hub for the chargers of this config entry."""
-    whitelist = IdTagWhitelist(entry.options.get(CONF_ALLOWED_ID_TAGS, []))
-    hub = OcppHub(hass, ocpp_charger_configs(entry), whitelist)
+    hub = OcppHub(hass, ocpp_charger_configs(entry), RfidAuthorizer(hass, entry))
     await hub.async_load()
     cloud = EaseeOcppCloud(hass.data[DOMAIN]["controller"].easee)
     await async_release_removed_chargers(hass, entry, set(hub.serials()), cloud)
@@ -74,6 +74,15 @@ def async_add_ocpp_entities(
         return
     for serial in hub.serials():
         async_add_entities(entities_for_charger(hub, serial))
+
+
+type ReloadRelevantSettings = tuple[object, ...]
+
+
+def reload_relevant_settings(entry: ConfigEntry) -> ReloadRelevantSettings:
+    """Everything whose change needs a reload; the RFID whitelist is read live and is not part of it."""
+    options = {key: value for key, value in entry.options.items() if key != CONF_ALLOWED_ID_TAGS}
+    return (dict(entry.data), options, frozenset(entry.subentries))
 
 
 def get_ocpp_hub(hass: HomeAssistant) -> OcppHub | None:

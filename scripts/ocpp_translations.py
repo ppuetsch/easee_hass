@@ -52,6 +52,12 @@ ENTITY_NAMES_EN = {
     "binary_sensor": {
         "connected": "OCPP connected", "transaction": "OCPP session active", "charging": "OCPP charging",
     },
+    "number": {"max_current": "OCPP max current"},
+    "switch": {"available": "OCPP available", "charge": "OCPP charge"},
+    "button": {
+        "soft_reset": "OCPP restart", "hard_reset": "OCPP reboot", "unlock": "OCPP unlock cable",
+        "refresh": "OCPP refresh", "learn_rfid": "OCPP learn next RFID card",
+    },
 }
 ENTITY_NAMES_DE = {
     "sensor": {
@@ -68,6 +74,12 @@ ENTITY_NAMES_DE = {
     },
     "binary_sensor": {
         "connected": "OCPP verbunden", "transaction": "OCPP-Ladevorgang aktiv", "charging": "OCPP lädt",
+    },
+    "number": {"max_current": "OCPP-Maximalstrom"},
+    "switch": {"available": "OCPP verfügbar", "charge": "OCPP laden"},
+    "button": {
+        "soft_reset": "OCPP-Neustart", "hard_reset": "OCPP-Hardware-Neustart", "unlock": "OCPP Kabel entriegeln",
+        "refresh": "OCPP aktualisieren", "learn_rfid": "OCPP nächste RFID-Karte anlernen",
     },
 }
 
@@ -238,16 +250,101 @@ SUBENTRY_DE: Texts = {
     },
 }
 
+
+DEVICE_FIELD_EN = {"name": "Charger", "description": "Charger connected via local OCPP."}
+DEVICE_FIELD_DE = {"name": "Charger", "description": "Per lokalem OCPP verbundener Charger."}
+
+
+def service(name: str, description: str, device_field: dict[str, str], **fields: tuple[str, str]) -> Texts:
+    """Texts of one action; fields are (name, description) pairs."""
+    return {
+        "name": name,
+        "description": description,
+        "fields": {"device_id": device_field} | {
+            key: {"name": field_name, "description": field_description}
+            for key, (field_name, field_description) in fields.items()
+        },
+    }
+
+
+SERVICES_EN: Texts = {
+    "ocpp_get_configuration": service(
+        "OCPP: read configuration",
+        "Reads all configuration keys, or one key (also hidden Easee keys like FreeCharging).",
+        DEVICE_FIELD_EN, key=("Key", "Only this key; empty for all visible keys.")),
+    "ocpp_change_configuration": service(
+        "OCPP: change configuration", "Writes one configuration key (ChangeConfiguration).",
+        DEVICE_FIELD_EN, key=("Key", "Configuration key."), value=("Value", "New value as text.")),
+    "ocpp_set_charging_profile": service(
+        "OCPP: set charging profile", "Installs a charging profile (SetChargingProfile, amperes only on Easee).",
+        DEVICE_FIELD_EN, connector_id=("Connector", "0 = whole charger, 1 = vehicle connector."),
+        charging_profile=("Charging profile", "OCPP 1.6 ChargingProfile object.")),
+    "ocpp_clear_charging_profile": service(
+        "OCPP: clear charging profiles", "Removes charging profiles; without criteria all of them.",
+        DEVICE_FIELD_EN, profile_id=("Profile id", "Only this profile."),
+        connector_id=("Connector", "Only this connector."),
+        purpose=("Purpose", "Only profiles with this purpose."), stack_level=("Stack level", "Only this stack level.")),
+    "ocpp_get_composite_schedule": service(
+        "OCPP: read effective schedule", "Returns the limits in force (GetCompositeSchedule).",
+        DEVICE_FIELD_EN, connector_id=("Connector", "0 = whole charger, 1 = vehicle connector."),
+        duration=("Duration", "Period to report, in seconds.")),
+    "ocpp_trigger_message": service(
+        "OCPP: request message", "Asks the charger to send a message now (TriggerMessage).",
+        DEVICE_FIELD_EN, message=("Message", "Message to send."), connector_id=("Connector", "Optional connector.")),
+    "ocpp_send_local_list": service(
+        "OCPP: send local authorization list",
+        "Cards the charger accepts by itself while it cannot reach Home Assistant (Easee: max. 10).",
+        DEVICE_FIELD_EN, id_tags=("RFID cards", "Card ids."),
+        version=("Version", "List version, increase with every change."),
+        full_update=("Replace list", "Replace the list instead of adding to it.")),
+    "ocpp_get_local_list_version": service(
+        "OCPP: read local list version", "Returns the version of the local authorization list.", DEVICE_FIELD_EN),
+}
+SERVICES_DE: Texts = {
+    "ocpp_get_configuration": service(
+        "OCPP: Konfiguration lesen",
+        "Liest alle Konfigurationsschlüssel oder einen (auch versteckte Easee-Schlüssel wie FreeCharging).",
+        DEVICE_FIELD_DE, key=("Schlüssel", "Nur diesen Schlüssel; leer für alle sichtbaren.")),
+    "ocpp_change_configuration": service(
+        "OCPP: Konfiguration ändern", "Schreibt einen Konfigurationsschlüssel (ChangeConfiguration).",
+        DEVICE_FIELD_DE, key=("Schlüssel", "Konfigurationsschlüssel."), value=("Wert", "Neuer Wert als Text.")),
+    "ocpp_set_charging_profile": service(
+        "OCPP: Ladeprofil setzen", "Installiert ein Ladeprofil (SetChargingProfile, bei Easee nur Ampere).",
+        DEVICE_FIELD_DE, connector_id=("Anschluss", "0 = ganzer Charger, 1 = Fahrzeuganschluss."),
+        charging_profile=("Ladeprofil", "OCPP-1.6-ChargingProfile-Objekt.")),
+    "ocpp_clear_charging_profile": service(
+        "OCPP: Ladeprofile löschen", "Entfernt Ladeprofile; ohne Kriterien alle.",
+        DEVICE_FIELD_DE, profile_id=("Profil-ID", "Nur dieses Profil."),
+        connector_id=("Anschluss", "Nur dieser Anschluss."),
+        purpose=("Zweck", "Nur Profile mit diesem Zweck."), stack_level=("Stack-Ebene", "Nur diese Ebene.")),
+    "ocpp_get_composite_schedule": service(
+        "OCPP: wirksamen Zeitplan lesen", "Liefert die geltenden Limits (GetCompositeSchedule).",
+        DEVICE_FIELD_DE, connector_id=("Anschluss", "0 = ganzer Charger, 1 = Fahrzeuganschluss."),
+        duration=("Dauer", "Zeitraum in Sekunden.")),
+    "ocpp_trigger_message": service(
+        "OCPP: Nachricht anfordern", "Fordert den Charger auf, sofort eine Nachricht zu senden (TriggerMessage).",
+        DEVICE_FIELD_DE, message=("Nachricht", "Zu sendende Nachricht."),
+        connector_id=("Anschluss", "Optionaler Anschluss.")),
+    "ocpp_send_local_list": service(
+        "OCPP: lokale Freigabeliste senden",
+        "Karten, die der Charger selbst akzeptiert, solange er Home Assistant nicht erreicht (Easee: max. 10).",
+        DEVICE_FIELD_DE, id_tags=("RFID-Karten", "Karten-IDs."),
+        version=("Version", "Listenversion, bei jeder Änderung erhöhen."),
+        full_update=("Liste ersetzen", "Liste ersetzen statt ergänzen.")),
+    "ocpp_get_local_list_version": service(
+        "OCPP: Version der lokalen Liste lesen", "Liefert die Version der lokalen Freigabeliste.", DEVICE_FIELD_DE),
+}
+
 OPTIONS_EN = {"allowed_id_tags": "RFID cards allowed to charge (OCPP)"}
 OPTIONS_DE = {"allowed_id_tags": "RFID-Karten mit Ladefreigabe (OCPP)"}
 
 
 def language_texts(entity_names_by_platform: dict[str, dict[str, str]], status_states: dict[str, str],
-                   subentry: Texts, options: dict[str, str]) -> Texts:
+                   subentry: Texts, options: dict[str, str], services: Texts) -> Texts:
     """Bundle all OCPP texts of one language."""
     entities = entity_names(entity_names_by_platform)
     entities["sensor"]["ocpp_status"]["state"] = status_states
-    return {"entity": entities, "subentry": subentry, "options": options}
+    return {"entity": entities, "subentry": subentry, "options": options, "services": services}
 
 
 def deep_merge(target: Texts, addition: Texts) -> None:
@@ -266,13 +363,14 @@ def merge_into(path: Path, texts: Texts) -> None:
     document.setdefault("config_subentries", {})["ocpp_charger"] = texts["subentry"]
     options_data = document.setdefault("options", {}).setdefault("step", {}).setdefault("init", {}).setdefault("data", {})
     options_data.update(texts["options"])
+    document.setdefault("services", {}).update(texts["services"])
     path.write_text(json.dumps(document, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
 
 
 def main() -> None:
     """Update all three files."""
-    english = language_texts(ENTITY_NAMES_EN, STATUS_STATES_EN, SUBENTRY_EN, OPTIONS_EN)
-    german = language_texts(ENTITY_NAMES_DE, STATUS_STATES_DE, SUBENTRY_DE, OPTIONS_DE)
+    english = language_texts(ENTITY_NAMES_EN, STATUS_STATES_EN, SUBENTRY_EN, OPTIONS_EN, SERVICES_EN)
+    german = language_texts(ENTITY_NAMES_DE, STATUS_STATES_DE, SUBENTRY_DE, OPTIONS_DE, SERVICES_DE)
     merge_into(INTEGRATION_DIR / "strings.json", english)
     merge_into(INTEGRATION_DIR / "translations" / "en.json", english)
     merge_into(INTEGRATION_DIR / "translations" / "de.json", german)

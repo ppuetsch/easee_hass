@@ -26,6 +26,7 @@ from ocpp.v16.enums import (
     MessageTrigger,
     RegistrationStatus,
     ResetType,
+    UpdateType,
 )
 
 from homeassistant.util import dt as dt_util
@@ -64,8 +65,8 @@ class CommandFailedError(Exception):
 class IdTagAuthorizer(Protocol):
     """Decides whether an RFID card may start charging."""
 
-    def is_allowed(self, id_tag: IdTag) -> bool:
-        """Return True if the card may charge."""
+    def is_allowed(self, serial: str, id_tag: IdTag) -> bool:
+        """Return True if the card may charge at this charger."""
 
 
 class OcppConnection(Protocol):
@@ -226,7 +227,7 @@ class EaseeChargePoint(ChargePoint):
         return call_result.DiagnosticsStatusNotification()
 
     def _authorize(self, id_tag: IdTag) -> IdTagInfo:
-        allowed = self._authorizer.is_allowed(id_tag)
+        allowed = self._authorizer.is_allowed(self.state.serial, id_tag)
         self.state.last_authorization = AuthorizationAttempt(
             id_tag=id_tag, accepted=allowed, timestamp=dt_util.utcnow()
         )
@@ -343,6 +344,41 @@ class EaseeChargePoint(ChargePoint):
         self.state.composite_limit_amps = limit
         self._on_state_changed()
         return limit
+
+    async def set_charging_profile(self, connector_id: int, profile: dict[str, Any]) -> None:
+        """Install an arbitrary charging profile (camelCase or snake_case keys)."""
+        await self.request_accepted(call.SetChargingProfile(connector_id=connector_id, cs_charging_profiles=profile))
+
+    async def composite_schedule(self, connector_id: int, duration: timedelta) -> dict[str, Any]:
+        """Return the raw composite schedule of a connector."""
+        result = await self.request(
+            call.GetCompositeSchedule(
+                connector_id=connector_id,
+                duration=int(duration.total_seconds()),
+                charging_rate_unit=ChargingRateUnitType.amps,
+            )
+        )
+        return {
+            "status": str(result.status),
+            "schedule_start": result.schedule_start,
+            "charging_schedule": result.charging_schedule,
+        }
+
+    async def send_local_list(self, version: int, full_update: bool, id_tags: list[IdTag]) -> None:
+        """Replace (full) or extend (differential) the charger's local authorization list."""
+        entries = [{"id_tag": tag, "id_tag_info": {"status": AuthorizationStatus.accepted}} for tag in id_tags]
+        await self.request_accepted(
+            call.SendLocalList(
+                list_version=version,
+                update_type=UpdateType.full if full_update else UpdateType.differential,
+                local_authorization_list=entries,
+            )
+        )
+
+    async def local_list_version(self) -> int:
+        """Version of the local authorization list on the charger."""
+        result = await self.request(call.GetLocalListVersion())
+        return int(result.list_version)
 
     async def change_availability(self, operative: bool) -> None:
         """Enable or disable the charger."""

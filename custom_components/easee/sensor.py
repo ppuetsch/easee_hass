@@ -16,7 +16,7 @@ from homeassistant.helpers.typing import StateType
 from .const import DOMAIN, MANUFACTURER, MODEL_EQUALIZER
 from .entity import ChargerEntity
 from .ocpp import async_add_ocpp_entities
-from .ocpp.sensor import ocpp_sensors
+from .ocpp.sensor import async_setup_ocpp_configuration_sensors, ocpp_sensors
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -31,6 +31,7 @@ async def async_setup_entry(
     entities = controller.get_sensor_entities()
     async_add_entities(entities)
     async_add_ocpp_entities(hass, async_add_entities, ocpp_sensors)
+    async_setup_ocpp_configuration_sensors(hass, entry, async_add_entities)
     await controller.async_setup_done("sensor")
 
 

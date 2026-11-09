@@ -42,10 +42,17 @@ class FakeChargerMemory:
     """What the central system did to the fake charger."""
 
     configuration: dict[str, str] = field(
-        default_factory=lambda: {"MeterValueSampleInterval": "0", "HeartbeatInterval": "86400"}
+        default_factory=lambda: {
+            "MeterValueSampleInterval": "0",
+            "HeartbeatInterval": "86400",
+            "LocalAuthorizeOffline": "True",
+            "MeterValuesSampledData": "Energy.Active.Import.Register",
+        }
     )
+    read_only_configuration: dict[str, str] = field(default_factory=lambda: {"NumberOfConnectors": "1"})
     charging_profiles: list[dict[str, Any]] = field(default_factory=list)
     triggered: list[str] = field(default_factory=list)
+    commands: list[tuple[str, dict[str, Any]]] = field(default_factory=list)
 
 
 class FakeEaseeCharger(ChargePoint):
@@ -68,12 +75,13 @@ class FakeEaseeCharger(ChargePoint):
     @on(Action.get_configuration)
     def on_get_configuration(self, key: list[str] | None = None, **kwargs: Any) -> call_result.GetConfiguration:
         """Return all keys, or the requested ones; Easee hides FreeCharging."""
-        requested = key or list(self.memory.configuration)
-        known = [name for name in requested if name in self.memory.configuration]
-        unknown = [name for name in requested if name not in self.memory.configuration]
+        all_values = {**self.memory.configuration, **self.memory.read_only_configuration}
+        requested = key or list(all_values)
+        known = [name for name in requested if name in all_values]
+        unknown = [name for name in requested if name not in all_values]
         return call_result.GetConfiguration(
             configuration_key=[
-                {"key": name, "readonly": False, "value": self.memory.configuration[name]}
+                {"key": name, "readonly": name in self.memory.read_only_configuration, "value": all_values[name]}
                 for name in known
             ],
             unknown_key=unknown or None,
@@ -102,6 +110,52 @@ class FakeEaseeCharger(ChargePoint):
         """Accept every trigger."""
         self.memory.triggered.append(requested_message)
         return call_result.TriggerMessage(status="Accepted")
+
+    def _remember(self, action: str, **payload: Any) -> None:
+        self.memory.commands.append((action, payload))
+
+    @on(Action.change_availability)
+    def on_change_availability(self, connector_id: int, type: str, **kwargs: Any) -> call_result.ChangeAvailability:
+        """Accept."""
+        self._remember("ChangeAvailability", type=type)
+        return call_result.ChangeAvailability(status="Accepted")
+
+    @on(Action.remote_start_transaction)
+    def on_remote_start(self, id_tag: str, **kwargs: Any) -> call_result.RemoteStartTransaction:
+        """Accept."""
+        self._remember("RemoteStartTransaction", id_tag=id_tag)
+        return call_result.RemoteStartTransaction(status="Accepted")
+
+    @on(Action.reset)
+    def on_reset(self, type: str, **kwargs: Any) -> call_result.Reset:
+        """Accept."""
+        self._remember("Reset", type=type)
+        return call_result.Reset(status="Accepted")
+
+    @on(Action.unlock_connector)
+    def on_unlock(self, connector_id: int, **kwargs: Any) -> call_result.UnlockConnector:
+        """Unlock."""
+        self._remember("UnlockConnector")
+        return call_result.UnlockConnector(status="Unlocked")
+
+    @on(Action.clear_charging_profile)
+    def on_clear_profile(self, **kwargs: Any) -> call_result.ClearChargingProfile:
+        """Forget all profiles."""
+        self._remember("ClearChargingProfile", **kwargs)
+        self.memory.charging_profiles.clear()
+        return call_result.ClearChargingProfile(status="Accepted")
+
+    @on(Action.send_local_list)
+    def on_send_local_list(self, list_version: int, update_type: str, **kwargs: Any) -> call_result.SendLocalList:
+        """Accept."""
+        self._remember("SendLocalList", list_version=list_version, **kwargs)
+        return call_result.SendLocalList(status="Accepted")
+
+    @on(Action.get_local_list_version)
+    def on_get_local_list_version(self, **kwargs: Any) -> call_result.GetLocalListVersion:
+        """Version of the last list."""
+        sent = [payload for action, payload in self.memory.commands if action == "SendLocalList"]
+        return call_result.GetLocalListVersion(list_version=sent[-1]["list_version"] if sent else 0)
 
     async def boot(self) -> call_result.BootNotification:
         """Send a BootNotification."""

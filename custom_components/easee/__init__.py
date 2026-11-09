@@ -16,12 +16,16 @@ from .const import DOMAIN, MIN_HA_VERSION, PLATFORMS, VERSION
 from .controller import Controller
 from .ocpp import (
     async_register_ocpp_view,
+    reload_relevant_settings,
     async_setup_ocpp_hub,
     async_unload_ocpp_hub,
 )
+from .ocpp.services import async_setup_ocpp_services
 from .services import async_setup_services
 
 _LOGGER = logging.getLogger(__name__)
+
+RELOAD_RELEVANT_SETTINGS = "reload_relevant_settings"
 
 
 CONFIG_SCHEMA = cv.config_entry_only_config_schema(DOMAIN)
@@ -31,6 +35,7 @@ async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:
     """Set up the Easee component."""
     await async_setup_services(hass)
     async_register_ocpp_view(hass)
+    async_setup_ocpp_services(hass)
     return True
 
 
@@ -58,6 +63,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry):
 
     hass.data[DOMAIN]["controller"] = controller
     await async_setup_ocpp_hub(hass, entry)
+    hass.data[DOMAIN][RELOAD_RELEVANT_SETTINGS] = reload_relevant_settings(entry)
 
     await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
 
@@ -81,7 +87,10 @@ async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry):
 
 
 async def config_entry_update_listener(hass: HomeAssistant, entry: ConfigEntry):
-    """Update listener."""
+    """Update listener; a changed RFID whitelist alone needs no reload (it is read live)."""
+    unchanged = hass.data.get(DOMAIN, {}).get(RELOAD_RELEVANT_SETTINGS) == reload_relevant_settings(entry)
+    if unchanged:
+        return
     await hass.config_entries.async_reload(entry.entry_id)
 
 
