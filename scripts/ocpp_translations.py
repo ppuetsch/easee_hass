@@ -315,6 +315,21 @@ DEVICE_FIELD_DE = {
 }
 
 
+SERIAL_FIELD_EN = {
+    "name": "Serial number",
+    "description": "Alternative to the charger: its serial number.",
+}
+SERIAL_FIELD_DE = {
+    "name": "Seriennummer",
+    "description": "Alternativ zum Charger: dessen Seriennummer.",
+}
+
+
+def serial_field(device_field: dict[str, str]) -> dict[str, str]:
+    """Serial number as alternative target, in the language of the device field."""
+    return SERIAL_FIELD_DE if device_field is DEVICE_FIELD_DE else SERIAL_FIELD_EN
+
+
 def service(
     name: str, description: str, device_field: dict[str, str], **fields: tuple[str, str]
 ) -> Texts:
@@ -322,7 +337,7 @@ def service(
     return {
         "name": name,
         "description": description,
-        "fields": {"device_id": device_field}
+        "fields": {"device_id": device_field, "serial": serial_field(device_field)}
         | {
             key: {"name": field_name, "description": field_description}
             for key, (field_name, field_description) in fields.items()
@@ -331,6 +346,14 @@ def service(
 
 
 SERVICES_EN: Texts = {
+    "ocpp_set_current_limit": service(
+        "OCPP: set temporary current limit",
+        "Limits the charger for the given duration; afterwards the OCPP max current applies again. "
+        "Meant for controllers (e.g. PV surplus charging) that renew the limit regularly.",
+        DEVICE_FIELD_EN,
+        current=("Current", "Limit in amperes; 0 pauses charging."),
+        duration=("Duration", "Seconds until the limit expires unless it is renewed."),
+    ),
     "ocpp_get_configuration": service(
         "OCPP: read configuration",
         "Reads all configuration keys, or one key (also hidden Easee keys like FreeCharging).",
@@ -389,6 +412,14 @@ SERVICES_EN: Texts = {
     ),
 }
 SERVICES_DE: Texts = {
+    "ocpp_set_current_limit": service(
+        "OCPP: befristetes Stromlimit setzen",
+        "Begrenzt den Charger für die angegebene Dauer; danach gilt wieder der OCPP-Maximalstrom. "
+        "Gedacht für Regler (z. B. PV-Überschussladen), die das Limit regelmäßig erneuern.",
+        DEVICE_FIELD_DE,
+        current=("Strom", "Limit in Ampere; 0 pausiert das Laden."),
+        duration=("Dauer", "Sekunden, bis das Limit ohne Erneuerung abläuft."),
+    ),
     "ocpp_get_configuration": service(
         "OCPP: Konfiguration lesen",
         "Liest alle Konfigurationsschlüssel oder einen (auch versteckte Easee-Schlüssel wie FreeCharging).",

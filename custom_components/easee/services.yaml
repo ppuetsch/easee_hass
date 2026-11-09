@@ -491,15 +491,52 @@ set_operator:
         number:
           min: 1
 
-ocpp_get_configuration:
+ocpp_set_current_limit:
   fields:
     device_id:
-      required: true
+      required: false
       selector:
         device:
           integration: "easee"
           entity:
             domain: "switch"
+    serial:
+      required: false
+      example: "EH123456"
+      selector:
+        text:
+    current:
+      required: true
+      example: 16
+      selector:
+        number:
+          min: 0
+          max: 32
+          unit_of_measurement: A
+    duration:
+      required: false
+      default: 120
+      selector:
+        number:
+          min: 10
+          max: 86400
+          unit_of_measurement: s
+          mode: box
+
+ocpp_get_configuration:
+  fields:
+    device_id:
+      required: false
+      selector:
+        device:
+          integration: "easee"
+          entity:
+            domain: "switch"
+    serial:
+      required: false
+      example: "EH123456"
+      selector:
+        text:
     key:
       required: false
       example: "FreeCharging"
@@ -509,12 +546,17 @@ ocpp_get_configuration:
 ocpp_change_configuration:
   fields:
     device_id:
-      required: true
+      required: false
       selector:
         device:
           integration: "easee"
           entity:
             domain: "switch"
+    serial:
+      required: false
+      example: "EH123456"
+      selector:
+        text:
     key:
       required: true
       example: "LightIntensity"
@@ -529,12 +571,17 @@ ocpp_change_configuration:
 ocpp_set_charging_profile:
   fields:
     device_id:
-      required: true
+      required: false
       selector:
         device:
           integration: "easee"
           entity:
             domain: "switch"
+    serial:
+      required: false
+      example: "EH123456"
+      selector:
+        text:
     connector_id:
       required: false
       default: 0
@@ -551,12 +598,17 @@ ocpp_set_charging_profile:
 ocpp_clear_charging_profile:
   fields:
     device_id:
-      required: true
+      required: false
       selector:
         device:
           integration: "easee"
           entity:
             domain: "switch"
+    serial:
+      required: false
+      example: "EH123456"
+      selector:
+        text:
     profile_id:
       required: false
       selector:
@@ -588,12 +640,17 @@ ocpp_clear_charging_profile:
 ocpp_get_composite_schedule:
   fields:
     device_id:
-      required: true
+      required: false
       selector:
         device:
           integration: "easee"
           entity:
             domain: "switch"
+    serial:
+      required: false
+      example: "EH123456"
+      selector:
+        text:
     connector_id:
       required: false
       default: 1
@@ -614,12 +671,17 @@ ocpp_get_composite_schedule:
 ocpp_trigger_message:
   fields:
     device_id:
-      required: true
+      required: false
       selector:
         device:
           integration: "easee"
           entity:
             domain: "switch"
+    serial:
+      required: false
+      example: "EH123456"
+      selector:
+        text:
     message:
       required: true
       selector:
@@ -641,12 +703,17 @@ ocpp_trigger_message:
 ocpp_send_local_list:
   fields:
     device_id:
-      required: true
+      required: false
       selector:
         device:
           integration: "easee"
           entity:
             domain: "switch"
+    serial:
+      required: false
+      example: "EH123456"
+      selector:
+        text:
     id_tags:
       required: true
       example: '["ABCD1234"]'
@@ -670,9 +737,14 @@ ocpp_send_local_list:
 ocpp_get_local_list_version:
   fields:
     device_id:
-      required: true
+      required: false
       selector:
         device:
           integration: "easee"
           entity:
             domain: "switch"
+    serial:
+      required: false
+      example: "EH123456"
+      selector:
+        text:

@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from collections.abc import Callable
+from dataclasses import dataclass
 from datetime import datetime, timedelta
 from decimal import Decimal
 import logging
@@ -37,6 +38,8 @@ from .const import (
     CHARGE_POINT_MAX_PROFILE_STACK_LEVEL,
     CONNECTOR_ID_CHARGE_POINT,
     CONNECTOR_ID_VEHICLE,
+    CONTROL_LIMIT_PROFILE_ID,
+    CONTROL_LIMIT_STACK_LEVEL,
     HEARTBEAT_INTERVAL,
     RESPONSE_TIMEOUT,
     TX_DEFAULT_PROFILE_ID,
@@ -57,6 +60,36 @@ _LOGGER = logging.getLogger(__name__)
 ACCEPTED = "Accepted"
 # Absolute profiles start slightly in the past so clock skew between HA and the charger does no harm.
 SCHEDULE_START_LEAD = timedelta(seconds=10)
+
+
+@dataclass(frozen=True)
+class ProfileSlot:
+    """Where a kind of charging profile lives; a fixed id and stack level replace older ones."""
+
+    profile_id: int
+    stack_level: int
+    purpose: ChargingProfilePurposeType
+    connector_id: int
+
+
+MAX_CURRENT_SLOT = ProfileSlot(
+    CHARGE_POINT_MAX_PROFILE_ID,
+    CHARGE_POINT_MAX_PROFILE_STACK_LEVEL,
+    ChargingProfilePurposeType.charge_point_max_profile,
+    CONNECTOR_ID_CHARGE_POINT,
+)
+CONTROL_LIMIT_SLOT = ProfileSlot(
+    CONTROL_LIMIT_PROFILE_ID,
+    CONTROL_LIMIT_STACK_LEVEL,
+    ChargingProfilePurposeType.charge_point_max_profile,
+    CONNECTOR_ID_CHARGE_POINT,
+)
+TX_DEFAULT_SLOT = ProfileSlot(
+    TX_DEFAULT_PROFILE_ID,
+    TX_DEFAULT_PROFILE_STACK_LEVEL,
+    ChargingProfilePurposeType.tx_default_profile,
+    CONNECTOR_ID_VEHICLE,
+)
 
 
 class CommandFailedError(Exception):
@@ -315,37 +348,30 @@ class EaseeChargePoint(ChargePoint):
 
     async def set_charge_point_max_current(self, amps: float) -> None:
         """Limit the whole charger (stays in force until replaced)."""
-        await self._set_profile(
-            CHARGE_POINT_MAX_PROFILE_ID,
-            CHARGE_POINT_MAX_PROFILE_STACK_LEVEL,
-            ChargingProfilePurposeType.charge_point_max_profile,
-            CONNECTOR_ID_CHARGE_POINT,
-            amps,
-        )
+        await self._set_profile(MAX_CURRENT_SLOT, amps)
+
+    async def set_control_limit(self, amps: float, valid_for: timedelta) -> None:
+        """Limit the charger for valid_for; afterwards the max current applies again."""
+        await self._set_profile(CONTROL_LIMIT_SLOT, amps, valid_for)
 
     async def set_tx_default_current(self, amps: float) -> None:
         """Default limit for every new charging session."""
-        await self._set_profile(
-            TX_DEFAULT_PROFILE_ID,
-            TX_DEFAULT_PROFILE_STACK_LEVEL,
-            ChargingProfilePurposeType.tx_default_profile,
-            CONNECTOR_ID_VEHICLE,
-            amps,
-        )
+        await self._set_profile(TX_DEFAULT_SLOT, amps)
 
     async def _set_profile(
-        self,
-        profile_id: int,
-        stack_level: int,
-        purpose: ChargingProfilePurposeType,
-        connector_id: int,
-        amps: float,
+        self, slot: ProfileSlot, amps: float, valid_for: timedelta | None = None
     ) -> None:
         schedule_start = dt_util.utcnow() - SCHEDULE_START_LEAD
+        # The schedule starts SCHEDULE_START_LEAD in the past, so the duration includes it.
+        duration = (
+            int((valid_for + SCHEDULE_START_LEAD).total_seconds())
+            if valid_for
+            else None
+        )
         profile = ChargingProfile(
-            charging_profile_id=profile_id,
-            stack_level=stack_level,
-            charging_profile_purpose=purpose,
+            charging_profile_id=slot.profile_id,
+            stack_level=slot.stack_level,
+            charging_profile_purpose=slot.purpose,
             charging_profile_kind=ChargingProfileKindType.absolute,
             charging_schedule=ChargingSchedule(
                 charging_rate_unit=ChargingRateUnitType.amps,
@@ -353,11 +379,12 @@ class EaseeChargePoint(ChargePoint):
                     ChargingSchedulePeriod(start_period=0, limit=amps)
                 ],
                 start_schedule=ocpp_timestamp(schedule_start),
+                duration=duration,
             ),
         )
         await self.request_accepted(
             call.SetChargingProfile(
-                connector_id=connector_id, cs_charging_profiles=profile
+                connector_id=slot.connector_id, cs_charging_profiles=profile
             )
         )
 

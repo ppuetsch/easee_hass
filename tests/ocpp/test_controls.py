@@ -219,3 +219,23 @@ async def test_actions(hass: HomeAssistant, connect_charger: ConnectCharger) -> 
         "ClearChargingProfile",
         {"charging_profile_purpose": "TxDefaultProfile"},
     ) in charger.memory.commands
+
+
+async def test_temporary_limit_by_serial(
+    hass: HomeAssistant, connect_charger: ConnectCharger
+) -> None:
+    """External controllers set an expiring limit above the max current profile."""
+    charger = await connected_charger(hass, connect_charger)
+
+    await hass.services.async_call(
+        DOMAIN,
+        "ocpp_set_current_limit",
+        {"serial": OCPP_SERIAL, "current": 8, "duration": 120},
+        blocking=True,
+    )
+
+    profile = charger.memory.charging_profiles[-1]
+    assert profile["stack_level"] == 1
+    assert profile["charging_profile_purpose"] == "ChargePointMaxProfile"
+    assert profile["charging_schedule"]["duration"] == 130
+    assert profile["charging_schedule"]["charging_schedule_period"][0]["limit"] == 8

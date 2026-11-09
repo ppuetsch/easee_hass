@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from collections.abc import Awaitable, Callable
+from contextlib import suppress
 from datetime import timedelta
 from typing import Any
 
@@ -54,11 +55,31 @@ type ServiceHandler = Callable[
     [EaseeChargePoint, ServiceCall], Awaitable[ServiceResponse]
 ]
 
-DEVICE_SCHEMA = {probatio.Required(ATTR_DEVICE_ID): cv.string}
+ATTR_SERIAL = "serial"
+ATTR_CURRENT = "current"
+TARGET_SCHEMA = {
+    probatio.Optional(ATTR_DEVICE_ID): cv.string,
+    probatio.Optional(ATTR_SERIAL): cv.string,
+}
+MAX_CURRENT_AMPS = 32
+DEFAULT_CONTROL_LIMIT_SECONDS = 120
 CONNECTOR = probatio.All(
     probatio.Coerce(int),
     probatio.Range(min=CONNECTOR_ID_CHARGE_POINT, max=CONNECTOR_ID_VEHICLE),
 )
+
+
+async def set_current_limit(
+    charge_point: EaseeChargePoint, call: ServiceCall
+) -> ServiceResponse:
+    """Set a limit that expires after duration unless renewed (for external controllers)."""
+    await charge_point.set_control_limit(
+        call.data[ATTR_CURRENT], timedelta(seconds=call.data[ATTR_DURATION])
+    )
+    # Only refreshes the limit sensor; the limit itself is already set.
+    with suppress(CommandFailedError):
+        await charge_point.read_composite_limit()
+    return None
 
 
 async def get_configuration(
@@ -153,6 +174,18 @@ async def get_local_list_version(
 
 
 SERVICES: dict[str, tuple[ServiceHandler, dict[Any, Any], SupportsResponse]] = {
+    "ocpp_set_current_limit": (
+        set_current_limit,
+        {
+            probatio.Required(ATTR_CURRENT): probatio.All(
+                probatio.Coerce(float), probatio.Range(min=0, max=MAX_CURRENT_AMPS)
+            ),
+            probatio.Optional(
+                ATTR_DURATION, default=DEFAULT_CONTROL_LIMIT_SECONDS
+            ): probatio.All(probatio.Coerce(int), probatio.Range(min=10, max=86400)),
+        },
+        SupportsResponse.NONE,
+    ),
     "ocpp_get_configuration": (
         get_configuration,
         {probatio.Optional(ATTR_KEY): cv.string},
@@ -219,6 +252,14 @@ SERVICES: dict[str, tuple[ServiceHandler, dict[Any, Any], SupportsResponse]] = {
 }
 
 
+def target_serial(hass: HomeAssistant, call: ServiceCall) -> Serial:
+    """Return the serial the action targets, given as serial or as device."""
+    if ATTR_SERIAL in call.data:
+        serial: Serial = call.data[ATTR_SERIAL]
+        return serial
+    return serial_of_device(hass, call.data[ATTR_DEVICE_ID])
+
+
 def serial_of_device(hass: HomeAssistant, device_id: str) -> Serial:
     """Return the charger serial behind a device id."""
     device = dr.async_get(hass).async_get(device_id)
@@ -235,7 +276,7 @@ def serial_of_device(hass: HomeAssistant, device_id: str) -> Serial:
 def charge_point_for(hass: HomeAssistant, call: ServiceCall) -> EaseeChargePoint:
     """Return the connected charge point the action targets."""
     hub: OcppHub | None = hass.data.get(HUB_DATA_KEY)
-    serial = serial_of_device(hass, call.data[ATTR_DEVICE_ID])
+    serial = target_serial(hass, call)
     if hub is None or not hub.knows(serial):
         raise ServiceValidationError(f"{serial} is not connected via local OCPP")
     try:
@@ -260,6 +301,9 @@ def async_setup_ocpp_services(hass: HomeAssistant) -> None:
             DOMAIN,
             name,
             handle,
-            schema=probatio.Schema({**DEVICE_SCHEMA, **fields}),
+            schema=probatio.All(
+                probatio.Schema({**TARGET_SCHEMA, **fields}),
+                cv.has_at_least_one_key(ATTR_DEVICE_ID, ATTR_SERIAL),
+            ),
             supports_response=supports_response,
         )

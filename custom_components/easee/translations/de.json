@@ -794,6 +794,10 @@
           "name": "Charger",
           "description": "Per lokalem OCPP verbundener Charger."
         },
+        "serial": {
+          "name": "Seriennummer",
+          "description": "Alternativ zum Charger: dessen Seriennummer."
+        },
         "key": {
           "name": "Schlüssel",
           "description": "Nur diesen Schlüssel; leer für alle sichtbaren."
@@ -807,6 +811,10 @@
         "device_id": {
           "name": "Charger",
           "description": "Per lokalem OCPP verbundener Charger."
+        },
+        "serial": {
+          "name": "Seriennummer",
+          "description": "Alternativ zum Charger: dessen Seriennummer."
         },
         "key": {
           "name": "Schlüssel",
@@ -826,6 +834,10 @@
           "name": "Charger",
           "description": "Per lokalem OCPP verbundener Charger."
         },
+        "serial": {
+          "name": "Seriennummer",
+          "description": "Alternativ zum Charger: dessen Seriennummer."
+        },
         "connector_id": {
           "name": "Anschluss",
           "description": "0 = ganzer Charger, 1 = Fahrzeuganschluss."
@@ -843,6 +855,10 @@
         "device_id": {
           "name": "Charger",
           "description": "Per lokalem OCPP verbundener Charger."
+        },
+        "serial": {
+          "name": "Seriennummer",
+          "description": "Alternativ zum Charger: dessen Seriennummer."
         },
         "profile_id": {
           "name": "Profil-ID",
@@ -870,6 +886,10 @@
           "name": "Charger",
           "description": "Per lokalem OCPP verbundener Charger."
         },
+        "serial": {
+          "name": "Seriennummer",
+          "description": "Alternativ zum Charger: dessen Seriennummer."
+        },
         "connector_id": {
           "name": "Anschluss",
           "description": "0 = ganzer Charger, 1 = Fahrzeuganschluss."
@@ -888,6 +908,10 @@
           "name": "Charger",
           "description": "Per lokalem OCPP verbundener Charger."
         },
+        "serial": {
+          "name": "Seriennummer",
+          "description": "Alternativ zum Charger: dessen Seriennummer."
+        },
         "message": {
           "name": "Nachricht",
           "description": "Zu sendende Nachricht."
@@ -905,6 +929,10 @@
         "device_id": {
           "name": "Charger",
           "description": "Per lokalem OCPP verbundener Charger."
+        },
+        "serial": {
+          "name": "Seriennummer",
+          "description": "Alternativ zum Charger: dessen Seriennummer."
         },
         "id_tags": {
           "name": "RFID-Karten",
@@ -927,6 +955,32 @@
         "device_id": {
           "name": "Charger",
           "description": "Per lokalem OCPP verbundener Charger."
+        },
+        "serial": {
+          "name": "Seriennummer",
+          "description": "Alternativ zum Charger: dessen Seriennummer."
+        }
+      }
+    },
+    "ocpp_set_current_limit": {
+      "name": "OCPP: befristetes Stromlimit setzen",
+      "description": "Begrenzt den Charger für die angegebene Dauer; danach gilt wieder der OCPP-Maximalstrom. Gedacht für Regler (z. B. PV-Überschussladen), die das Limit regelmäßig erneuern.",
+      "fields": {
+        "device_id": {
+          "name": "Charger",
+          "description": "Per lokalem OCPP verbundener Charger."
+        },
+        "serial": {
+          "name": "Seriennummer",
+          "description": "Alternativ zum Charger: dessen Seriennummer."
+        },
+        "current": {
+          "name": "Strom",
+          "description": "Limit in Ampere; 0 pausiert das Laden."
+        },
+        "duration": {
+          "name": "Dauer",
+          "description": "Sekunden, bis das Limit ohne Erneuerung abläuft."
         }
       }
     }

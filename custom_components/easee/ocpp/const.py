@@ -41,6 +41,11 @@ OCPP_PASSWORD_LENGTH: Final = 20
 CHARGE_POINT_MAX_PROFILE_ID: Final = 1
 CHARGE_POINT_MAX_PROFILE_STACK_LEVEL: Final = 0
 TX_DEFAULT_PROFILE_ID: Final = 3
+# Limit set by an external controller (e.g. a PV surplus service). It sits above the max
+# current profile and expires on its own, so the charger falls back to the max current
+# (e.g. 0 A) when the controller stops renewing it.
+CONTROL_LIMIT_PROFILE_ID: Final = 2
+CONTROL_LIMIT_STACK_LEVEL: Final = 1
 TX_DEFAULT_PROFILE_STACK_LEVEL: Final = 0
 
 SIGNAL_OCPP_STATE_UPDATED: Final = "easee_ocpp_state_updated_{serial}"
