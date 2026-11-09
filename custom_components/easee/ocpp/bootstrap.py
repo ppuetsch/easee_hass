@@ -75,10 +75,12 @@ class ChargePointBootstrapper:
 
     async def _read_configuration(self) -> None:
         await self._best_effort("GetConfiguration", self._charge_point.read_configuration())
-        await self._best_effort(
-            "GetConfiguration (hidden Easee keys)",
-            self._charge_point.read_configuration(list(EASEE_HIDDEN_CONFIGURATION_KEYS)),
-        )
+        # Easee answers at most one key per request (GetConfigurationMaxKeys = 1).
+        for hidden_key in EASEE_HIDDEN_CONFIGURATION_KEYS:
+            await self._best_effort(
+                f"GetConfiguration {hidden_key}",
+                self._charge_point.read_configuration([hidden_key]),
+            )
 
     async def _apply_max_current(self) -> None:
         await self._best_effort(
