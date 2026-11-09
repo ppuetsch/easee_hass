@@ -9,14 +9,14 @@ from __future__ import annotations
 
 import asyncio
 from dataclasses import dataclass
-from datetime import timedelta
+from datetime import datetime, timedelta
 import secrets
 import string
 from typing import Any
 
 import probatio
 
-from homeassistant.config_entries import ConfigSubentryFlow, SubentryFlowResult
+from homeassistant.config_entries import SOURCE_RECONFIGURE, ConfigSubentryFlow, SubentryFlowResult
 from homeassistant.helpers.selector import (
     BooleanSelector,
     SelectOptionDict,
@@ -193,8 +193,21 @@ class OcppChargerSubentryFlow(ConfigSubentryFlow):
             return self.async_abort(reason=error.reason)
         return self.async_abort(reason="rolled_back")
 
+    async def async_step_reconfigure(self, user_input: dict[str, Any] | None = None) -> SubentryFlowResult:
+        """Change the address of a configured charger; the password stays the same."""
+        subentry = self._get_reconfigure_subentry()
+        self._serial = subentry.data[CONF_SERIAL]
+        self._charger_name = subentry.title.removeprefix("OCPP ")
+        self._password = subentry.data[CONF_OCPP_PASSWORD]
+        self._url = subentry.data.get(CONF_OCPP_URL, "")
+        return await self.async_step_address()
+
     async def async_step_finish(self, user_input: dict[str, Any] | None = None) -> SubentryFlowResult:
         """Store the charger; the integration reloads and serves it from now on."""
+        if self.source == SOURCE_RECONFIGURE:
+            return self.async_update_and_abort(
+                self._get_entry(), self._get_reconfigure_subentry(), data_updates={CONF_OCPP_URL: self._url}
+            )
         return self.async_create_entry(
             title=f"OCPP {self._charger_name}",
             data={CONF_SERIAL: self._serial, CONF_OCPP_PASSWORD: self._password, CONF_OCPP_URL: self._url},
@@ -206,13 +219,15 @@ class OcppChargerSubentryFlow(ConfigSubentryFlow):
         if hub is None:
             return ConnectOutcome(connected=False, cloud_error="integration_not_loaded")
         hub.expect_charger(OcppChargerConfig(self._serial, self._password))
+        # When reconfiguring, the charger is still connected via the old address; wait for the new connection.
+        previous_connection = hub.state(self._serial).connected_since
         if not self._cloud_applied:
             try:
                 await self._cloud().enable(self._serial, self._url, self._password)
             except OcppCloudError as error:
                 return ConnectOutcome(connected=False, cloud_error=error.reason)
             self._cloud_applied = True
-        return ConnectOutcome(connected=await wait_for_connection(hub, self._serial))
+        return ConnectOutcome(connected=await wait_for_connection(hub, self._serial, previous_connection))
 
     async def _lift_circuit_limit(self, product_data: Any, readiness: ChargerReadiness) -> None:
         maximum = readiness.lowest_circuit_maximum()
@@ -241,11 +256,16 @@ class OcppChargerSubentryFlow(ConfigSubentryFlow):
         }
 
 
-async def wait_for_connection(hub: OcppHub, serial: str) -> bool:
-    """Wait until the charger has opened its websocket, at most CONNECT_TIMEOUT."""
+async def wait_for_connection(hub: OcppHub, serial: str, previous_connection: datetime | None) -> bool:
+    """Wait until the charger has opened a websocket newer than previous_connection, at most CONNECT_TIMEOUT."""
+
+    def has_new_connection() -> bool:
+        state = hub.state(serial)
+        return hub.is_connected(serial) and state.connected_since != previous_connection
+
     try:
         async with asyncio.timeout(CONNECT_TIMEOUT.total_seconds()):
-            while not hub.is_connected(serial):
+            while not has_new_connection():
                 await asyncio.sleep(CONNECT_POLL_INTERVAL.total_seconds())
     except TimeoutError:
         return False

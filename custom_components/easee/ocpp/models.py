@@ -81,6 +81,8 @@ class ChargePointState:
     serial: Serial
     connected: bool = False
     connected_since: datetime | None = None
+    disconnected_since: datetime | None = None
+    authentication_failures: int = 0
     last_message_at: datetime | None = None
     boot_info: BootInfo | None = None
     connector_status: str | None = None
@@ -95,6 +97,10 @@ class ChargePointState:
     unsupported_configuration_keys: set[str] = field(default_factory=set)
     meter_value_sample_interval: int | None = None
     composite_limit_amps: float | None = None
+
+    def disconnected_longer_than(self, duration: timedelta, now: datetime) -> bool:
+        """Return True if the charger has been offline for at least duration."""
+        return not self.connected and self.disconnected_since is not None and now - self.disconnected_since >= duration
 
     def has_transaction(self) -> bool:
         """Return True while a charging session is open."""

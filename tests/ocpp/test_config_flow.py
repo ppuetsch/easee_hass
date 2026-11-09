@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import asyncio
-from datetime import timedelta
 from typing import Any
 
 import pytest
@@ -25,15 +24,6 @@ from .fake_cloud import FakeController
 
 HA_URL = "ws://192.168.1.10:8123/api/easee/ocpp"
 type FlowResult = dict[str, Any]
-
-
-@pytest.fixture(autouse=True)
-def fast_waiting(monkeypatch: pytest.MonkeyPatch) -> None:
-    """Poll quickly and give up after a short time."""
-    monkeypatch.setattr(
-        "custom_components.easee.ocpp.config_flow.CONNECT_POLL_INTERVAL", timedelta(milliseconds=20)
-    )
-    monkeypatch.setattr("custom_components.easee.ocpp.config_flow.CONNECT_TIMEOUT", timedelta(seconds=1))
 
 
 async def start_flow(hass: HomeAssistant, entry: MockConfigEntry) -> FlowResult:

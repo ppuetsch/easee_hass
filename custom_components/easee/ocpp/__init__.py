@@ -20,6 +20,7 @@ from .cloud_setup import EaseeOcppCloud
 from .authorization import RfidAuthorizer
 from .hub import OcppChargerConfig, OcppHub
 from .models import Serial
+from .health import OcppHealthMonitor
 from .removal import async_release_removed_chargers
 from .server import HUB_DATA_KEY, OcppWebSocketView
 
@@ -47,6 +48,7 @@ async def async_setup_ocpp_hub(hass: HomeAssistant, entry: ConfigEntry) -> OcppH
     await hub.async_load()
     cloud = EaseeOcppCloud(hass.data[DOMAIN]["controller"].easee)
     await async_release_removed_chargers(hass, entry, set(hub.serials()), cloud)
+    await OcppHealthMonitor(hass, entry, hub).async_start()
     hass.data[HUB_DATA_KEY] = hub
     return hub
 

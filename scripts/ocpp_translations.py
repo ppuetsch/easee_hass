@@ -85,7 +85,7 @@ ENTITY_NAMES_DE = {
 
 SUBENTRY_EN: Texts = {
     "entry_type": "OCPP charger",
-    "initiate_flow": {"user": "Connect charger via local OCPP"},
+    "initiate_flow": {"user": "Connect charger via local OCPP", "reconfigure": "Change OCPP address"},
     "step": {
         "user": {
             "title": "Connect charger via local OCPP",
@@ -168,7 +168,7 @@ SUBENTRY_EN: Texts = {
 }
 SUBENTRY_DE: Texts = {
     "entry_type": "OCPP-Charger",
-    "initiate_flow": {"user": "Charger per lokalem OCPP verbinden"},
+    "initiate_flow": {"user": "Charger per lokalem OCPP verbinden", "reconfigure": "OCPP-Adresse ändern"},
     "step": {
         "user": {
             "title": "Charger per lokalem OCPP verbinden",
@@ -335,16 +335,85 @@ SERVICES_DE: Texts = {
         "OCPP: Version der lokalen Liste lesen", "Liefert die Version der lokalen Freigabeliste.", DEVICE_FIELD_DE),
 }
 
+
+def repair_issue(title: str, description: str, fix_title: str, fix_description: str, url_label: str,
+                 errors: dict[str, str], aborts: dict[str, str]) -> Texts:
+    """Texts of one repair issue with the re-apply fix flow."""
+    return {
+        "title": title,
+        "description": description,
+        "fix_flow": {
+            "step": {"init": {"title": fix_title, "description": fix_description, "data": {"ocpp_url": url_label}}},
+            "error": errors,
+            "abort": aborts,
+        },
+    }
+
+
+FIX_EN = (
+    "Apply the connection again – {serial}",
+    "Home Assistant will send this address and the stored password to the charger via the Easee cloud. "
+    "It usually takes a few minutes until the charger connects.",
+    "OCPP address",
+)
+FIX_DE = (
+    "Verbindung erneut anwenden – {serial}",
+    "Home Assistant schickt diese Adresse und das gespeicherte Passwort über die Easee-Cloud an den Charger. "
+    "Meist dauert es ein paar Minuten, bis er sich verbindet.",
+    "OCPP-Adresse",
+)
+ISSUE_ABORTS_EN = {"charger_not_configured": "The charger is no longer connected via OCPP."}
+ISSUE_ABORTS_DE = {"charger_not_configured": "Der Charger ist nicht mehr per OCPP eingerichtet."}
+
+
+def issues(fix: tuple[str, str, str], errors: dict[str, str], aborts: dict[str, str],
+           disconnected: tuple[str, str], authentication: tuple[str, str], address: tuple[str, str]) -> Texts:
+    """All OCPP repair issues of one language."""
+    return {
+        "ocpp_disconnected": repair_issue(*disconnected, *fix, errors, aborts),
+        "ocpp_authentication_failed": repair_issue(*authentication, *fix, errors, aborts),
+        "ocpp_address_changed": repair_issue(*address, *fix, errors, aborts),
+    }
+
+
+ISSUES_EN: Texts = issues(
+    FIX_EN, SUBENTRY_EN["error"], ISSUE_ABORTS_EN,
+    ("Easee charger {serial} is not connected via OCPP",
+     "The charger has not been connected to Home Assistant for more than 15 minutes. While OCPP is active it "
+     "cannot start charging without Home Assistant. Check that it is online and can reach Home Assistant, "
+     "or apply the connection again."),
+    ("Easee charger {serial} uses a wrong OCPP password",
+     "The charger tried to connect several times with a password that does not match. Apply the connection "
+     "again to send it the stored password."),
+    ("OCPP address of Easee charger {serial} no longer points to Home Assistant",
+     "The charger connects to {url}, which does not resolve to this Home Assistant any more (e.g. after an IP "
+     "change). Apply a current address."),
+)
+ISSUES_DE: Texts = issues(
+    FIX_DE, SUBENTRY_DE["error"], ISSUE_ABORTS_DE,
+    ("Easee-Charger {serial} ist nicht per OCPP verbunden",
+     "Der Charger ist seit mehr als 15 Minuten nicht mit Home Assistant verbunden. Solange OCPP aktiv ist, kann "
+     "er ohne Home Assistant keinen Ladevorgang starten. Prüfe, ob er online ist und Home Assistant erreicht, "
+     "oder wende die Verbindung erneut an."),
+    ("Easee-Charger {serial} nutzt ein falsches OCPP-Passwort",
+     "Der Charger hat sich mehrfach mit einem nicht passenden Passwort angemeldet. Wende die Verbindung erneut "
+     "an, um ihm das gespeicherte Passwort zu schicken."),
+    ("OCPP-Adresse von Easee-Charger {serial} zeigt nicht mehr auf Home Assistant",
+     "Der Charger verbindet sich mit {url}; die Adresse führt nicht mehr zu diesem Home Assistant (z. B. nach "
+     "einem IP-Wechsel). Wende eine aktuelle Adresse an."),
+)
+
 OPTIONS_EN = {"allowed_id_tags": "RFID cards allowed to charge (OCPP)"}
 OPTIONS_DE = {"allowed_id_tags": "RFID-Karten mit Ladefreigabe (OCPP)"}
 
 
 def language_texts(entity_names_by_platform: dict[str, dict[str, str]], status_states: dict[str, str],
-                   subentry: Texts, options: dict[str, str], services: Texts) -> Texts:
+                   subentry: Texts, options: dict[str, str], services: Texts, issue_texts: Texts) -> Texts:
     """Bundle all OCPP texts of one language."""
     entities = entity_names(entity_names_by_platform)
     entities["sensor"]["ocpp_status"]["state"] = status_states
-    return {"entity": entities, "subentry": subentry, "options": options, "services": services}
+    return {"entity": entities, "subentry": subentry, "options": options, "services": services,
+            "issues": issue_texts}
 
 
 def deep_merge(target: Texts, addition: Texts) -> None:
@@ -364,13 +433,14 @@ def merge_into(path: Path, texts: Texts) -> None:
     options_data = document.setdefault("options", {}).setdefault("step", {}).setdefault("init", {}).setdefault("data", {})
     options_data.update(texts["options"])
     document.setdefault("services", {}).update(texts["services"])
+    document.setdefault("issues", {}).update(texts["issues"])
     path.write_text(json.dumps(document, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
 
 
 def main() -> None:
     """Update all three files."""
-    english = language_texts(ENTITY_NAMES_EN, STATUS_STATES_EN, SUBENTRY_EN, OPTIONS_EN, SERVICES_EN)
-    german = language_texts(ENTITY_NAMES_DE, STATUS_STATES_DE, SUBENTRY_DE, OPTIONS_DE, SERVICES_DE)
+    english = language_texts(ENTITY_NAMES_EN, STATUS_STATES_EN, SUBENTRY_EN, OPTIONS_EN, SERVICES_EN, ISSUES_EN)
+    german = language_texts(ENTITY_NAMES_DE, STATUS_STATES_DE, SUBENTRY_DE, OPTIONS_DE, SERVICES_DE, ISSUES_DE)
     merge_into(INTEGRATION_DIR / "strings.json", english)
     merge_into(INTEGRATION_DIR / "translations" / "en.json", english)
     merge_into(INTEGRATION_DIR / "translations" / "de.json", german)

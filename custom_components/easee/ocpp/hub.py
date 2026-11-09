@@ -70,7 +70,10 @@ class OcppHub:
         self._hass = hass
         self._configs = {config.serial: config for config in chargers}
         self.authorizer = authorizer
-        self._states = {serial: ChargePointState(serial) for serial in self._configs}
+        started_at = dt_util.utcnow()
+        self._states = {
+            serial: ChargePointState(serial, disconnected_since=started_at) for serial in self._configs
+        }
         self._charge_points: dict[Serial, EaseeChargePoint] = {}
         self._connections: dict[Serial, AiohttpOcppConnection] = {}
         self._bootstrapped: dict[Serial, EaseeChargePoint] = {}
@@ -84,7 +87,7 @@ class OcppHub:
     def expect_charger(self, config: OcppChargerConfig) -> None:
         """Accept a charger that is being set up and has no subentry yet."""
         self._configs[config.serial] = config
-        self._states.setdefault(config.serial, ChargePointState(config.serial))
+        self._states.setdefault(config.serial, ChargePointState(config.serial, disconnected_since=dt_util.utcnow()))
 
     def serials(self) -> list[Serial]:
         """Return the serials of all configured chargers."""
@@ -108,7 +111,8 @@ class OcppHub:
         return user_matches and password_matches
 
     def record_authentication_failure(self, serial: Serial) -> None:
-        """Log a failed login; the charger's stored password does not match the subentry."""
+        """Count a failed login; the charger's stored password does not match the subentry."""
+        self._states[serial].authentication_failures += 1
         _LOGGER.warning("OCPP basic auth for %s failed", serial)
 
     def state(self, serial: Serial) -> ChargePointState:
@@ -189,6 +193,8 @@ class OcppHub:
         state = self._states[serial]
         state.connected = True
         state.connected_since = dt_util.utcnow()
+        state.disconnected_since = None
+        state.authentication_failures = 0
         _LOGGER.info("%s connected via OCPP", serial)
         self.notify(serial)
 
@@ -199,6 +205,7 @@ class OcppHub:
         self._connections.pop(serial, None)
         self._bootstrapped.pop(serial, None)
         self._states[serial].connected = False
+        self._states[serial].disconnected_since = dt_util.utcnow()
         self.notify(serial)
 
     async def _bootstrap_after_delay(self, serial: Serial) -> None:

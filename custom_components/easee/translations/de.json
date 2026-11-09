@@ -943,7 +943,8 @@
     "ocpp_charger": {
       "entry_type": "OCPP-Charger",
       "initiate_flow": {
-        "user": "Charger per lokalem OCPP verbinden"
+        "user": "Charger per lokalem OCPP verbinden",
+        "reconfigure": "OCPP-Adresse ändern"
       },
       "step": {
         "user": {
@@ -1002,6 +1003,92 @@
         "ocpp_forbidden": "Die Easee-Cloud hat die Änderung abgelehnt. Nur der Besitzer (oder ein Admin) des Standorts darf OCPP ändern.",
         "ocpp_rejected": "Die Easee-Cloud hat die Änderung abgelehnt.",
         "cloud_unavailable": "Die Easee-Cloud ist nicht erreichbar. Versuche es später noch einmal."
+      }
+    }
+  },
+  "issues": {
+    "ocpp_disconnected": {
+      "title": "Easee-Charger {serial} ist nicht per OCPP verbunden",
+      "description": "Der Charger ist seit mehr als 15 Minuten nicht mit Home Assistant verbunden. Solange OCPP aktiv ist, kann er ohne Home Assistant keinen Ladevorgang starten. Prüfe, ob er online ist und Home Assistant erreicht, oder wende die Verbindung erneut an.",
+      "fix_flow": {
+        "step": {
+          "init": {
+            "title": "Verbindung erneut anwenden – {serial}",
+            "description": "Home Assistant schickt diese Adresse und das gespeicherte Passwort über die Easee-Cloud an den Charger. Meist dauert es ein paar Minuten, bis er sich verbindet.",
+            "data": {
+              "ocpp_url": "OCPP-Adresse"
+            }
+          }
+        },
+        "error": {
+          "invalid_url": "Gib eine URL wie ws://192.168.1.10:8123/api/easee/ocpp ein.",
+          "mdns_host": "Der Charger kann keine .local-Namen auflösen; nutze die IP-Adresse oder einen Namen, den dein Router auflöst.",
+          "wss_not_supported": "wss:// braucht ein Zertifikat einer öffentlichen CA, das Home Assistant meist nicht hat. Nutze ws://.",
+          "wrong_path": "Der Pfad muss /api/easee/ocpp lauten (der Charger hängt seine Seriennummer an).",
+          "ocpp_forbidden": "Die Easee-Cloud hat die Änderung abgelehnt. Nur der Besitzer (oder ein Admin) des Standorts darf OCPP einschalten.",
+          "ocpp_rejected": "Die Easee-Cloud hat die OCPP-Einstellungen abgelehnt.",
+          "cloud_unavailable": "Die Easee-Cloud ist nicht erreichbar. Versuche es später noch einmal.",
+          "integration_not_loaded": "Die Easee-Integration ist nicht geladen."
+        },
+        "abort": {
+          "charger_not_configured": "Der Charger ist nicht mehr per OCPP eingerichtet."
+        }
+      }
+    },
+    "ocpp_authentication_failed": {
+      "title": "Easee-Charger {serial} nutzt ein falsches OCPP-Passwort",
+      "description": "Der Charger hat sich mehrfach mit einem nicht passenden Passwort angemeldet. Wende die Verbindung erneut an, um ihm das gespeicherte Passwort zu schicken.",
+      "fix_flow": {
+        "step": {
+          "init": {
+            "title": "Verbindung erneut anwenden – {serial}",
+            "description": "Home Assistant schickt diese Adresse und das gespeicherte Passwort über die Easee-Cloud an den Charger. Meist dauert es ein paar Minuten, bis er sich verbindet.",
+            "data": {
+              "ocpp_url": "OCPP-Adresse"
+            }
+          }
+        },
+        "error": {
+          "invalid_url": "Gib eine URL wie ws://192.168.1.10:8123/api/easee/ocpp ein.",
+          "mdns_host": "Der Charger kann keine .local-Namen auflösen; nutze die IP-Adresse oder einen Namen, den dein Router auflöst.",
+          "wss_not_supported": "wss:// braucht ein Zertifikat einer öffentlichen CA, das Home Assistant meist nicht hat. Nutze ws://.",
+          "wrong_path": "Der Pfad muss /api/easee/ocpp lauten (der Charger hängt seine Seriennummer an).",
+          "ocpp_forbidden": "Die Easee-Cloud hat die Änderung abgelehnt. Nur der Besitzer (oder ein Admin) des Standorts darf OCPP einschalten.",
+          "ocpp_rejected": "Die Easee-Cloud hat die OCPP-Einstellungen abgelehnt.",
+          "cloud_unavailable": "Die Easee-Cloud ist nicht erreichbar. Versuche es später noch einmal.",
+          "integration_not_loaded": "Die Easee-Integration ist nicht geladen."
+        },
+        "abort": {
+          "charger_not_configured": "Der Charger ist nicht mehr per OCPP eingerichtet."
+        }
+      }
+    },
+    "ocpp_address_changed": {
+      "title": "OCPP-Adresse von Easee-Charger {serial} zeigt nicht mehr auf Home Assistant",
+      "description": "Der Charger verbindet sich mit {url}; die Adresse führt nicht mehr zu diesem Home Assistant (z. B. nach einem IP-Wechsel). Wende eine aktuelle Adresse an.",
+      "fix_flow": {
+        "step": {
+          "init": {
+            "title": "Verbindung erneut anwenden – {serial}",
+            "description": "Home Assistant schickt diese Adresse und das gespeicherte Passwort über die Easee-Cloud an den Charger. Meist dauert es ein paar Minuten, bis er sich verbindet.",
+            "data": {
+              "ocpp_url": "OCPP-Adresse"
+            }
+          }
+        },
+        "error": {
+          "invalid_url": "Gib eine URL wie ws://192.168.1.10:8123/api/easee/ocpp ein.",
+          "mdns_host": "Der Charger kann keine .local-Namen auflösen; nutze die IP-Adresse oder einen Namen, den dein Router auflöst.",
+          "wss_not_supported": "wss:// braucht ein Zertifikat einer öffentlichen CA, das Home Assistant meist nicht hat. Nutze ws://.",
+          "wrong_path": "Der Pfad muss /api/easee/ocpp lauten (der Charger hängt seine Seriennummer an).",
+          "ocpp_forbidden": "Die Easee-Cloud hat die Änderung abgelehnt. Nur der Besitzer (oder ein Admin) des Standorts darf OCPP einschalten.",
+          "ocpp_rejected": "Die Easee-Cloud hat die OCPP-Einstellungen abgelehnt.",
+          "cloud_unavailable": "Die Easee-Cloud ist nicht erreichbar. Versuche es später noch einmal.",
+          "integration_not_loaded": "Die Easee-Integration ist nicht geladen."
+        },
+        "abort": {
+          "charger_not_configured": "Der Charger ist nicht mehr per OCPP eingerichtet."
+        }
       }
     }
   }

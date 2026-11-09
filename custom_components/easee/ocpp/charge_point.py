@@ -252,10 +252,10 @@ class EaseeChargePoint(ChargePoint):
         return IdTagInfo(status=status)
 
     async def request(self, payload: Any) -> Any:
-        """Send a call and return its result; raise CommandFailedError on CALLERROR or timeout."""
+        """Send a call and return its result; raise CommandFailedError on CALLERROR, timeout or a closed connection."""
         try:
             return await self.call(payload, suppress=False)
-        except (OCPPError, TimeoutError) as error:
+        except (OCPPError, TimeoutError, ConnectionError) as error:
             raise CommandFailedError(f"{type(payload).__name__}: {error}") from error
 
     async def request_accepted(self, payload: Any) -> None:

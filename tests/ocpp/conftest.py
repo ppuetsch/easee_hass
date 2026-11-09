@@ -3,11 +3,13 @@
 from __future__ import annotations
 
 import asyncio
+from contextlib import suppress
 from collections.abc import AsyncIterator, Callable, Coroutine
 from typing import Any
 from datetime import timedelta
+from ipaddress import IPv4Address
 
-from aiohttp import ClientWebSocketResponse
+from aiohttp import ClientConnectionResetError, ClientWebSocketResponse
 import pytest
 from pytest_homeassistant_custom_component.common import MockConfigEntry
 
@@ -15,6 +17,7 @@ from custom_components.easee.const import DOMAIN
 from custom_components.easee.ocpp.const import (
     CONF_ALLOWED_ID_TAGS,
     CONF_OCPP_PASSWORD,
+    CONF_OCPP_URL,
     CONF_SERIAL,
     SUBENTRY_TYPE_OCPP_CHARGER,
 )
@@ -27,6 +30,8 @@ from .fake_cloud import FakeCloudCharger, FakeController
 OCPP_SERIAL = "EHTEST01"
 CLOUD_ONLY_SERIAL = "EHTEST02"
 OCPP_PASSWORD = "secret-password-123"
+HOME_ASSISTANT_IP = "192.168.1.10"
+OCPP_URL = f"ws://{HOME_ASSISTANT_IP}:8123/api/easee/ocpp"
 ALLOWED_CARD = "ABCD1234"
 
 type ConnectCharger = Callable[..., Coroutine[Any, Any, FakeEaseeCharger]]
@@ -38,6 +43,25 @@ def no_bootstrap_delay(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setattr(
         "custom_components.easee.ocpp.hub.BOOTSTRAP_DELAY_AFTER_CONNECT", timedelta(0)
     )
+
+
+@pytest.fixture(autouse=True)
+def fast_waiting(monkeypatch: pytest.MonkeyPatch) -> None:
+    """The wizard polls quickly and gives up after a second instead of ten minutes."""
+    monkeypatch.setattr(
+        "custom_components.easee.ocpp.config_flow.CONNECT_POLL_INTERVAL", timedelta(milliseconds=20)
+    )
+    monkeypatch.setattr("custom_components.easee.ocpp.config_flow.CONNECT_TIMEOUT", timedelta(seconds=1))
+
+
+@pytest.fixture(autouse=True)
+def home_assistant_address(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Home Assistant's own IP, so the address check needs no real network."""
+
+    async def own_addresses(hass: HomeAssistant) -> list[IPv4Address]:
+        return [IPv4Address(HOME_ASSISTANT_IP)]
+
+    monkeypatch.setattr("custom_components.easee.ocpp.health.async_get_enabled_source_ips", own_addresses)
 
 
 @pytest.fixture
@@ -60,7 +84,7 @@ def config_entry(hass: HomeAssistant) -> MockConfigEntry:
         options={"monitored_sites": ["Home"], CONF_ALLOWED_ID_TAGS: [ALLOWED_CARD]},
         subentries_data=[
             ConfigSubentryData(
-                data={CONF_SERIAL: OCPP_SERIAL, CONF_OCPP_PASSWORD: OCPP_PASSWORD},
+                data={CONF_SERIAL: OCPP_SERIAL, CONF_OCPP_PASSWORD: OCPP_PASSWORD, CONF_OCPP_URL: OCPP_URL},
                 subentry_type=SUBENTRY_TYPE_OCPP_CHARGER,
                 title=f"OCPP Garage ({OCPP_SERIAL})",
                 unique_id=OCPP_SERIAL,
@@ -104,5 +128,9 @@ async def connect_charger(
     yield connect
     for loop in loops:
         loop.cancel()
+    # A replaced connection ends its loop with a connection error; that is expected here.
+    await asyncio.gather(*loops, return_exceptions=True)
     for websocket in websockets:
-        await websocket.close()
+        # The hub may already have closed a replaced connection.
+        with suppress(ClientConnectionResetError):
+            await websocket.close()
