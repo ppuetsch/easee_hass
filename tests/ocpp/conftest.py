@@ -3,7 +3,8 @@
 from __future__ import annotations
 
 import asyncio
-from collections.abc import AsyncIterator, Awaitable, Callable
+from collections.abc import AsyncIterator, Callable, Coroutine
+from typing import Any
 from datetime import timedelta
 
 from aiohttp import ClientWebSocketResponse
@@ -28,7 +29,7 @@ CLOUD_ONLY_SERIAL = "EHTEST02"
 OCPP_PASSWORD = "secret-password-123"
 ALLOWED_CARD = "ABCD1234"
 
-type ConnectCharger = Callable[[str], Awaitable[FakeEaseeCharger]]
+type ConnectCharger = Callable[..., Coroutine[Any, Any, FakeEaseeCharger]]
 
 
 @pytest.fixture(autouse=True)
@@ -42,10 +43,9 @@ def no_bootstrap_delay(monkeypatch: pytest.MonkeyPatch) -> None:
 @pytest.fixture
 def fake_cloud(monkeypatch: pytest.MonkeyPatch) -> type[FakeController]:
     """Replace the cloud controller; the account has two chargers."""
-    FakeController.chargers = [
-        FakeCloudCharger(OCPP_SERIAL, "Garage"),
-        FakeCloudCharger(CLOUD_ONLY_SERIAL, "Carport"),
-    ]
+    FakeController.reset(
+        [FakeCloudCharger(OCPP_SERIAL, "Garage"), FakeCloudCharger(CLOUD_ONLY_SERIAL, "Carport")]
+    )
     monkeypatch.setattr("custom_components.easee.Controller", FakeController)
     return FakeController
 
@@ -89,12 +89,12 @@ async def connect_charger(
     websockets: list[ClientWebSocketResponse] = []
     loops: list[asyncio.Task[None]] = []
 
-    async def connect(serial: str) -> FakeEaseeCharger:
+    async def connect(serial: str, password: str = OCPP_PASSWORD) -> FakeEaseeCharger:
         client = await hass_client_no_auth()
         websocket = await client.ws_connect(
             f"/api/easee/ocpp/{serial}",
             protocols=("ocpp1.6",),
-            headers=basic_auth(serial, OCPP_PASSWORD),
+            headers=basic_auth(serial, password),
         )
         websockets.append(websocket)
         charger = FakeEaseeCharger(serial, ClientConnection(websocket))

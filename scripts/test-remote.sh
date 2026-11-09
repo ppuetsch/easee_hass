@@ -14,7 +14,7 @@ ensure_image() {
 
 run_tests() {
   tar -C "$REPO_ROOT" --exclude=__pycache__ -cf - custom_components tests pyproject.toml \
-    | ssh "$DOCKER_HOST_SSH" "docker run --rm -i $IMAGE sh -c 'tar --no-same-owner -xf - && python -m pytest tests -q -p no:cacheprovider $*'"
+    | ssh "$DOCKER_HOST_SSH" "docker run --rm -i -e PYTHONUNBUFFERED=1 $IMAGE sh -c 'tar --no-same-owner -xf - && timeout ${TEST_TIMEOUT_SECONDS:-300} python -m pytest tests -q -p no:cacheprovider $*'"
 }
 
 ensure_image

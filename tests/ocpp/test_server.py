@@ -28,7 +28,7 @@ async def hub(hass: HomeAssistant) -> OcppHub:
     await async_setup_component(hass, "http", {})
     async_register_ocpp_view(hass)
     ocpp_hub = OcppHub(
-        hass, [OcppChargerConfig(SERIAL, PASSWORD, "subentry")], IdTagWhitelist([ALLOWED_CARD])
+        hass, [OcppChargerConfig(SERIAL, PASSWORD)], IdTagWhitelist([ALLOWED_CARD])
     )
     await ocpp_hub.async_load()
     hass.data[HUB_DATA_KEY] = ocpp_hub

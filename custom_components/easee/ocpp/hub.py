@@ -37,7 +37,6 @@ class OcppChargerConfig:
 
     serial: Serial
     password: str
-    subentry_id: str
 
 
 def normalised_id_tag(id_tag: IdTag) -> str:
@@ -85,6 +84,11 @@ class OcppHub:
     async def async_load(self) -> None:
         """Load the limits HA set before the last restart."""
         self._max_current = await self._store.async_load() or {}
+
+    def expect_charger(self, config: OcppChargerConfig) -> None:
+        """Accept a charger that is being set up and has no subentry yet."""
+        self._configs[config.serial] = config
+        self._states.setdefault(config.serial, ChargePointState(config.serial))
 
     def serials(self) -> list[Serial]:
         """Return the serials of all configured chargers."""

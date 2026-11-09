@@ -778,14 +778,60 @@
       "step": {
         "user": {
           "title": "Charger per lokalem OCPP verbinden",
-          "description": "Wähle den Charger, der sich direkt mit Home Assistant verbinden soll.",
+          "description": "Der Charger verbindet sich direkt mit Home Assistant (OCPP 1.6). Die Easee-Cloud funktioniert parallel weiter. Wähle den Charger:",
           "data": {
             "serial": "Charger"
           }
+        },
+        "prerequisites": {
+          "title": "Voraussetzungen prüfen – {charger}",
+          "description": "{firmware_check} Firmware {firmware} (mindestens 344)\n{wifi_check} Per WLAN verbunden (über Mobilfunk erreicht der Charger Home Assistant nicht)\n{operator_check} Betreiber des Standorts: {operator} (muss Easee sein; sonst in der Easee-App ändern)\n{circuit_check} Kein dynamisches Stromkreislimit unterhalb der Absicherung\n\nWichtig: Solange OCPP aktiv ist, lädt der Charger erst, wenn Home Assistant die RFID-Karte freigegeben hat. Trage deine Karten in den Optionen der Integration ein (Konfigurieren → RFID-Karten).",
+          "data": {
+            "reset_circuit_limit": "Dynamisches Stromkreislimit auf die Absicherung anheben"
+          },
+          "data_description": {
+            "reset_circuit_limit": "Sonst begrenzt das Stromkreislimit aus der Cloud weiterhin die OCPP-Limits."
+          }
+        },
+        "address": {
+          "title": "Adresse von Home Assistant – {charger}",
+          "description": "Der Charger verbindet sich mit dieser Adresse und hängt /{serial} an. Sie muss aus dem Netz des Chargers erreichbar sein: IP-Adresse oder ein Name, den dein Router auflöst (keine .local-Namen). Port 8123 ist der eigene Port von Home Assistant, es muss nichts weiter freigegeben werden. Die Verbindung ist unverschlüsselt (ws://) mit generiertem Passwort, weil Easee TLS nur mit Zertifikaten einer öffentlichen CA akzeptiert.",
+          "data": {
+            "ocpp_url": "OCPP-Adresse"
+          }
+        },
+        "connection_failed": {
+          "title": "{charger} hat sich nicht verbunden",
+          "description": "Der Charger hat sich nicht innerhalb von 10 Minuten mit {url} verbunden. Mögliche Ursachen: Die Adresse ist aus dem Netz des Chargers nicht erreichbar (Firewall, VLAN, falsche IP), der Name lässt sich nicht auflösen, oder der Charger ist offline. Manchmal dauert es auch länger.",
+          "menu_options": {
+            "connect": "Weiter warten",
+            "address": "Adresse ändern",
+            "rollback": "Abbrechen und Charger wieder nur über die Cloud betreiben",
+            "finish": "Trotzdem speichern (der Charger verbindet sich evtl. später)"
+          }
         }
       },
+      "progress": {
+        "wait_for_charger": "OCPP wird für {charger} über die Easee-Cloud eingeschaltet. Warte, bis sich der Charger mit {url} verbindet. Das dauert meist ein paar Minuten (bis zu 10)."
+      },
+      "error": {
+        "invalid_url": "Gib eine URL wie ws://192.168.1.10:8123/api/easee/ocpp ein.",
+        "mdns_host": "Der Charger kann keine .local-Namen auflösen; nutze die IP-Adresse oder einen Namen, den dein Router auflöst.",
+        "wss_not_supported": "wss:// braucht ein Zertifikat einer öffentlichen CA, das Home Assistant meist nicht hat. Nutze ws://.",
+        "wrong_path": "Der Pfad muss /api/easee/ocpp lauten (der Charger hängt seine Seriennummer an).",
+        "ocpp_forbidden": "Die Easee-Cloud hat die Änderung abgelehnt. Nur der Besitzer (oder ein Admin) des Standorts darf OCPP einschalten.",
+        "ocpp_rejected": "Die Easee-Cloud hat die OCPP-Einstellungen abgelehnt.",
+        "cloud_unavailable": "Die Easee-Cloud ist nicht erreichbar. Versuche es später noch einmal.",
+        "integration_not_loaded": "Die Easee-Integration ist nicht geladen."
+      },
       "abort": {
-        "no_unconfigured_chargers": "Alle Charger sind bereits per OCPP verbunden."
+        "no_unconfigured_chargers": "Alle Charger sind bereits per OCPP verbunden.",
+        "integration_not_loaded": "Die Easee-Integration ist nicht geladen.",
+        "firmware_too_old": "Firmware {firmware} unterstützt kein lokales OCPP (mindestens 344). Aktualisiere den Charger zuerst in der Easee-App.",
+        "rolled_back": "Abgebrochen. Der Charger läuft wieder nur über die Cloud.",
+        "ocpp_forbidden": "Die Easee-Cloud hat die Änderung abgelehnt. Nur der Besitzer (oder ein Admin) des Standorts darf OCPP ändern.",
+        "ocpp_rejected": "Die Easee-Cloud hat die Änderung abgelehnt.",
+        "cloud_unavailable": "Die Easee-Cloud ist nicht erreichbar. Versuche es später noch einmal."
       }
     }
   }
