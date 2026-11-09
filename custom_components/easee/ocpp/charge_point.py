@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from collections.abc import Callable
 from datetime import datetime, timedelta
+from decimal import Decimal
 import logging
 from typing import Any, Protocol
 
@@ -87,6 +88,17 @@ def ocpp_timestamp(moment: datetime) -> str:
 def new_transaction_id(now: datetime) -> int:
     """Return a transaction id that stays unique across restarts of Home Assistant."""
     return int(now.timestamp()) % 2**31
+
+
+def without_decimals(payload: Any) -> Any:
+    """The ocpp library parses numbers as Decimal; HA's JSON responses need plain numbers."""
+    if isinstance(payload, Decimal):
+        return float(payload)
+    if isinstance(payload, dict):
+        return {key: without_decimals(value) for key, value in payload.items()}
+    if isinstance(payload, list):
+        return [without_decimals(value) for value in payload]
+    return payload
 
 
 def is_accepted(status: Any) -> bool:
@@ -361,7 +373,7 @@ class EaseeChargePoint(ChargePoint):
         return {
             "status": str(result.status),
             "schedule_start": result.schedule_start,
-            "charging_schedule": result.charging_schedule,
+            "charging_schedule": without_decimals(result.charging_schedule),
         }
 
     async def send_local_list(self, version: int, full_update: bool, id_tags: list[IdTag]) -> None:
