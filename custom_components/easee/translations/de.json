@@ -336,7 +336,8 @@
           "measured_consumption_days": "Verbrauchsanzeige Tage",
           "monitored_conditions": "Charger Sensoren",
           "monitored_eq_conditions": "Equalizer Sensoren",
-          "monitored_sites": "Standorte"
+          "monitored_sites": "Standorte",
+          "allowed_id_tags": "RFID-Karten mit Ladefreigabe (OCPP)"
         },
         "description": "Optionen wählen",
         "title": "Easee Wallbox"
@@ -684,5 +685,25 @@
       "reach_easee_cloud": "Easee Cloud erreichbar"
     }
   },
-  "title": "Easee Wallbox"
+  "title": "Easee Wallbox",
+  "config_subentries": {
+    "ocpp_charger": {
+      "entry_type": "OCPP-Charger",
+      "initiate_flow": {
+        "user": "Charger per lokalem OCPP verbinden"
+      },
+      "step": {
+        "user": {
+          "title": "Charger per lokalem OCPP verbinden",
+          "description": "Wähle den Charger, der sich direkt mit Home Assistant verbinden soll.",
+          "data": {
+            "serial": "Charger"
+          }
+        }
+      },
+      "abort": {
+        "no_unconfigured_chargers": "Alle Charger sind bereits per OCPP verbunden."
+      }
+    }
+  }
 }

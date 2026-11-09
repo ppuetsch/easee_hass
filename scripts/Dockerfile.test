@@ -1,0 +1,5 @@
+# Test image: Home Assistant's test harness does not run on Windows.
+FROM python:3.14-slim
+RUN pip install --no-cache-dir pytest-homeassistant-custom-component pyeasee==0.8.22 ocpp==2.1.0 mypy
+WORKDIR /src
+CMD ["python", "-m", "pytest", "tests", "-q", "-p", "no:cacheprovider"]

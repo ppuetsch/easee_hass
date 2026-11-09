@@ -348,7 +348,8 @@
           "measured_consumption_days": "Consumption monitoring days",
           "monitored_conditions": "Charger sensors monitored",
           "monitored_eq_conditions": "Equalizer sensors monitored",
-          "monitored_sites": "Sites monitored"
+          "monitored_sites": "Sites monitored",
+          "allowed_id_tags": "RFID cards allowed to charge (OCPP)"
         },
         "description": "Select options",
         "title": "Easee EV Charger"
@@ -705,5 +706,25 @@
       "reach_easee_cloud": "Reach Easee Cloud"
     }
   },
-  "title": "Easee EV Charger"
+  "title": "Easee EV Charger",
+  "config_subentries": {
+    "ocpp_charger": {
+      "entry_type": "OCPP charger",
+      "initiate_flow": {
+        "user": "Connect charger via local OCPP"
+      },
+      "step": {
+        "user": {
+          "title": "Connect charger via local OCPP",
+          "description": "Select the charger that should connect directly to Home Assistant.",
+          "data": {
+            "serial": "Charger"
+          }
+        }
+      },
+      "abort": {
+        "no_unconfigured_chargers": "All chargers are already connected via OCPP."
+      }
+    }
+  }
 }

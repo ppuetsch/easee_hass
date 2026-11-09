@@ -127,3 +127,7 @@ venv.bak/
 .mypy_cache/
 
 .idea/
+
+# Local development
+.venv/
+__pycache__/
