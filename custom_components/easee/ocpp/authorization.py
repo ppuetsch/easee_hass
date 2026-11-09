@@ -42,17 +42,21 @@ class RfidAuthorizer:
         self._learning_until: datetime | None = None
 
     def allowed_id_tags(self) -> list[IdTag]:
-        """The whitelist as currently configured."""
+        """Return the whitelist as currently configured."""
         tags: list[IdTag] = self._entry.options.get(CONF_ALLOWED_ID_TAGS, [])
         return tags
 
     def is_on_whitelist(self, id_tag: IdTag) -> bool:
         """Return True if the card is configured."""
-        return normalised_id_tag(id_tag) in {normalised_id_tag(tag) for tag in self.allowed_id_tags()}
+        return normalised_id_tag(id_tag) in {
+            normalised_id_tag(tag) for tag in self.allowed_id_tags()
+        }
 
     def is_learning(self) -> bool:
         """Return True while the next unknown card will be learned."""
-        return self._learning_until is not None and dt_util.utcnow() < self._learning_until
+        return (
+            self._learning_until is not None and dt_util.utcnow() < self._learning_until
+        )
 
     @callback
     def start_learning(self) -> None:
@@ -68,15 +72,21 @@ class RfidAuthorizer:
             self._learn(serial, id_tag)
             allowed = True
         self._hass.bus.async_fire(
-            EVENT_OCPP_AUTHORIZE, {"serial": serial, "id_tag": id_tag, "accepted": allowed}
+            EVENT_OCPP_AUTHORIZE,
+            {"serial": serial, "id_tag": id_tag, "accepted": allowed},
         )
         return allowed
 
     def _learn(self, serial: Serial, id_tag: IdTag) -> None:
         self._learning_until = None
-        options = {**self._entry.options, CONF_ALLOWED_ID_TAGS: [*self.allowed_id_tags(), id_tag]}
+        options = {
+            **self._entry.options,
+            CONF_ALLOWED_ID_TAGS: [*self.allowed_id_tags(), id_tag],
+        }
         self._hass.config_entries.async_update_entry(self._entry, options=options)
-        _LOGGER.info("%s: RFID card %s learned and added to the whitelist", serial, id_tag)
+        _LOGGER.info(
+            "%s: RFID card %s learned and added to the whitelist", serial, id_tag
+        )
         persistent_notification.async_create(
             self._hass,
             f"RFID card {id_tag} (charger {serial}) was added to the OCPP whitelist.",

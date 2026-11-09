@@ -52,7 +52,9 @@ def parse_meter_values(
             if sampled_value.get("context") in IGNORED_CONTEXTS:
                 continue
             try:
-                value = normalised_value(sampled_value["value"], sampled_value.get("unit"))
+                value = normalised_value(
+                    sampled_value["value"], sampled_value.get("unit")
+                )
             except (KeyError, ValueError):
                 _LOGGER.debug("Ignoring unparsable sampled value %s", sampled_value)
                 continue

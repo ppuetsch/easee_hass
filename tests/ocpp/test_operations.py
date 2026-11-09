@@ -8,7 +8,10 @@ from typing import Any
 
 from aiohttp import WSServerHandshakeError
 import pytest
-from pytest_homeassistant_custom_component.common import MockConfigEntry, async_fire_time_changed
+from pytest_homeassistant_custom_component.common import (
+    MockConfigEntry,
+    async_fire_time_changed,
+)
 
 from custom_components.easee.const import DOMAIN
 from custom_components.easee.ocpp.const import CONF_OCPP_URL, SUBENTRY_TYPE_OCPP_CHARGER
@@ -36,7 +39,10 @@ NEW_URL = "ws://192.168.1.11:8123/api/easee/ocpp"
 
 def has_issue(hass: HomeAssistant, kind: str) -> bool:
     """Return True if the repair issue exists for the test charger."""
-    return ir.async_get(hass).async_get_issue(DOMAIN, issue_id(kind, OCPP_SERIAL)) is not None
+    return (
+        ir.async_get(hass).async_get_issue(DOMAIN, issue_id(kind, OCPP_SERIAL))
+        is not None
+    )
 
 
 async def tick(hass: HomeAssistant) -> None:
@@ -49,7 +55,9 @@ async def test_long_disconnect_raises_an_issue_that_clears_on_connect(
     hass: HomeAssistant, loaded_entry: MockConfigEntry, connect_charger: ConnectCharger
 ) -> None:
     """After 15 minutes offline there is an issue; it disappears once the charger is back."""
-    hass.data[HUB_DATA_KEY].state(OCPP_SERIAL).disconnected_since = dt_util.utcnow() - timedelta(minutes=20)
+    hass.data[HUB_DATA_KEY].state(OCPP_SERIAL).disconnected_since = (
+        dt_util.utcnow() - timedelta(minutes=20)
+    )
     await tick(hass)
     assert has_issue(hass, ISSUE_DISCONNECTED)
 
@@ -66,24 +74,32 @@ async def test_repeated_wrong_password_raises_an_issue(
     for _ in range(3):
         with pytest.raises(WSServerHandshakeError):
             await client.ws_connect(
-                f"/api/easee/ocpp/{OCPP_SERIAL}", protocols=("ocpp1.6",), headers=basic_auth(OCPP_SERIAL, "wrong")
+                f"/api/easee/ocpp/{OCPP_SERIAL}",
+                protocols=("ocpp1.6",),
+                headers=basic_auth(OCPP_SERIAL, "wrong"),
             )
     await tick(hass)
     assert has_issue(hass, ISSUE_AUTHENTICATION_FAILED)
 
 
-async def test_address_of_other_host_raises_an_issue(hass: HomeAssistant, loaded_entry: MockConfigEntry) -> None:
+async def test_address_of_other_host_raises_an_issue(
+    hass: HomeAssistant, loaded_entry: MockConfigEntry
+) -> None:
     """A stored address that is not this Home Assistant is reported at setup."""
     assert not has_issue(hass, ISSUE_ADDRESS_CHANGED)
     subentry = next(iter(loaded_entry.subentries.values()))
-    hass.config_entries.async_update_subentry(loaded_entry, subentry, data={**subentry.data, CONF_OCPP_URL: NEW_URL})
+    hass.config_entries.async_update_subentry(
+        loaded_entry, subentry, data={**subentry.data, CONF_OCPP_URL: NEW_URL}
+    )
     await hass.config_entries.async_reload(loaded_entry.entry_id)
     await hass.async_block_till_done()
 
     assert has_issue(hass, ISSUE_ADDRESS_CHANGED)
 
 
-async def test_fix_flow_applies_the_connection_again(hass: HomeAssistant, loaded_entry: MockConfigEntry) -> None:
+async def test_fix_flow_applies_the_connection_again(
+    hass: HomeAssistant, loaded_entry: MockConfigEntry
+) -> None:
     """The fix sends address and stored password via the cloud and stores the address."""
     flow = ReapplyOcppConnectionFlow(OCPP_SERIAL)
     flow.hass = hass
@@ -106,7 +122,9 @@ async def test_reconfigure_changes_the_address_and_waits_for_the_new_connection(
     await connect_charger(OCPP_SERIAL)
 
     def charger_reconnects(serial: str, details: dict[str, Any]) -> None:
-        asyncio.get_running_loop().create_task(connect_charger(serial, details["basicAuthPassword"]))
+        asyncio.get_running_loop().create_task(
+            connect_charger(serial, details["basicAuthPassword"])
+        )
 
     FakeController.easee.on_apply = charger_reconnects
     subentry_id = next(iter(loaded_entry.subentries))
@@ -119,19 +137,31 @@ async def test_reconfigure_changes_the_address_and_waits_for_the_new_connection(
     assert result["step_id"] == "address"
     assert result["data_schema"]({})[CONF_OCPP_URL] == OCPP_URL
 
-    result = dict(await hass.config_entries.subentries.async_configure(result["flow_id"], {CONF_OCPP_URL: NEW_URL}))
+    result = dict(
+        await hass.config_entries.subentries.async_configure(
+            result["flow_id"], {CONF_OCPP_URL: NEW_URL}
+        )
+    )
     await hass.async_block_till_done(wait_background_tasks=True)
-    result = dict(await hass.config_entries.subentries.async_configure(result["flow_id"]))
+    result = dict(
+        await hass.config_entries.subentries.async_configure(result["flow_id"])
+    )
     if result["type"] is FlowResultType.SHOW_PROGRESS_DONE:
-        result = dict(await hass.config_entries.subentries.async_configure(result["flow_id"]))
+        result = dict(
+            await hass.config_entries.subentries.async_configure(result["flow_id"])
+        )
 
     assert result["type"] is FlowResultType.ABORT
     assert result["reason"] == "reconfigure_successful"
     assert loaded_entry.subentries[subentry_id].data[CONF_OCPP_URL] == NEW_URL
-    assert FakeController.easee.stored[OCPP_SERIAL]["basicAuthPassword"] == OCPP_PASSWORD
+    assert (
+        FakeController.easee.stored[OCPP_SERIAL]["basicAuthPassword"] == OCPP_PASSWORD
+    )
 
 
-async def test_diagnostics_hide_secrets(hass: HomeAssistant, loaded_entry: MockConfigEntry) -> None:
+async def test_diagnostics_hide_secrets(
+    hass: HomeAssistant, loaded_entry: MockConfigEntry
+) -> None:
     """Password and cards are redacted, the state is included."""
     diagnostics = ocpp_diagnostics(hass, loaded_entry)
 

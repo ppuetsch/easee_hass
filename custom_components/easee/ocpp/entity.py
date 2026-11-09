@@ -14,7 +14,7 @@ from .models import ChargePointState, Serial
 
 
 def ocpp_unique_id(serial: Serial, key: str) -> str:
-    """Unique ids are marked so they never collide with the cloud entities of the same charger."""
+    """Return a unique id that never collides with the cloud entities of the same charger."""
     return f"{serial}{OCPP_UNIQUE_ID_MARKER}{key}"
 
 
@@ -24,14 +24,18 @@ class OcppEntity(Entity):
     _attr_has_entity_name = True
     _attr_should_poll = False
 
-    def __init__(self, hub: OcppHub, serial: Serial, description: EntityDescription) -> None:
+    def __init__(
+        self, hub: OcppHub, serial: Serial, description: EntityDescription
+    ) -> None:
         """Bind the entity to one charger."""
         self._hub = hub
         self._serial = serial
         self.entity_description = description
         self._attr_unique_id = ocpp_unique_id(serial, description.key)
         # Prefixed so the OCPP texts never clash with the cloud entities' translations.
-        self._attr_translation_key = f"ocpp_{description.translation_key or description.key}"
+        self._attr_translation_key = (
+            f"ocpp_{description.translation_key or description.key}"
+        )
         self._attr_device_info = DeviceInfo(identifiers={(DOMAIN, serial)})
 
     @property
@@ -48,7 +52,9 @@ class OcppEntity(Entity):
         """Follow state changes of the charger."""
         self.async_on_remove(
             async_dispatcher_connect(
-                self.hass, signal_state_updated(self._serial), self._handle_state_updated
+                self.hass,
+                signal_state_updated(self._serial),
+                self._handle_state_updated,
             )
         )
 

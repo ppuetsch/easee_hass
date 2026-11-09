@@ -33,7 +33,7 @@ class OcppCloudError(Exception):
     """The Easee cloud refused or failed to change the OCPP connection."""
 
     def __init__(self, reason: str) -> None:
-        """reason is a translation key of the config flow errors."""
+        """Reason is a translation key of the config flow errors."""
         super().__init__(reason)
         self.reason = reason
 
@@ -69,19 +69,23 @@ class ChargerReadiness:
         return self.wifi_rssi is not None and self.wifi_rssi != 0
 
     def operator_is_easee(self) -> bool:
-        """The site must have Easee as operator before OCPP can be enabled."""
+        """Return True if the site has Easee as operator, which OCPP requires."""
         return self.operator_name in {None, OPERATOR_EASEE}
 
     def circuit_is_limited(self) -> bool:
-        """A dynamic circuit limit below the maximum still caps the OCPP limits."""
+        """Return True if a dynamic circuit limit below the maximum caps the OCPP limits."""
         return any(
             dynamic is not None and maximum is not None and dynamic < maximum
-            for dynamic, maximum in zip(self.dynamic_circuit_current, self.circuit_max_current, strict=True)
+            for dynamic, maximum in zip(
+                self.dynamic_circuit_current, self.circuit_max_current, strict=True
+            )
         )
 
     def lowest_circuit_maximum(self) -> int | None:
         """Circuit fuse rating, used to lift a dynamic circuit limit."""
-        maxima = [maximum for maximum in self.circuit_max_current if maximum is not None]
+        maxima = [
+            maximum for maximum in self.circuit_max_current if maximum is not None
+        ]
         return int(min(maxima)) if maxima else None
 
 
@@ -90,7 +94,9 @@ def optional_number(value: Any) -> float | None:
     return float(value) if isinstance(value, int | float) else None
 
 
-def charger_readiness(state: Mapping[str, Any] | None, config: Mapping[str, Any] | None) -> ChargerReadiness:
+def charger_readiness(
+    state: Mapping[str, Any] | None, config: Mapping[str, Any] | None
+) -> ChargerReadiness:
     """Read the preconditions from the cloud state and config of a charger."""
     state = state or {}
     config = config or {}
@@ -100,8 +106,14 @@ def charger_readiness(state: Mapping[str, Any] | None, config: Mapping[str, Any]
         firmware=int(firmware) if isinstance(firmware, int | float) else None,
         wifi_rssi=int(wifi_rssi) if isinstance(wifi_rssi, int | float) else None,
         operator_name=state.get("operatorName"),
-        dynamic_circuit_current=tuple(optional_number(state.get(f"dynamicCircuitCurrentP{phase}")) for phase in PHASES),
-        circuit_max_current=tuple(optional_number(config.get(f"circuitMaxCurrentP{phase}")) for phase in PHASES),
+        dynamic_circuit_current=tuple(
+            optional_number(state.get(f"dynamicCircuitCurrentP{phase}"))
+            for phase in PHASES
+        ),
+        circuit_max_current=tuple(
+            optional_number(config.get(f"circuitMaxCurrentP{phase}"))
+            for phase in PHASES
+        ),
     )
 
 
@@ -115,7 +127,9 @@ class EaseeOcppCloud:
     async def read_connection(self, serial: Serial) -> OcppCloudConnection:
         """Return the stored connection (mode None if nothing is stored)."""
         try:
-            response = await self._easee.get(CONNECTION_DETAILS_PATH.format(serial=serial))
+            response = await self._easee.get(
+                CONNECTION_DETAILS_PATH.format(serial=serial)
+            )
             details = await response.json()
         except NotFoundException:
             return OcppCloudConnection(mode=None, url=None)
@@ -139,14 +153,27 @@ class EaseeOcppCloud:
         """Switch the charger back to cloud only."""
         await self._store_and_apply(serial, {"connectivityMode": MODE_OCPP_OFF})
 
-    async def _store_and_apply(self, serial: Serial, connection: dict[str, Any]) -> None:
+    async def _store_and_apply(
+        self, serial: Serial, connection: dict[str, Any]
+    ) -> None:
         try:
-            response = await self._easee.post(CONNECTION_DETAILS_PATH.format(serial=serial), json=connection)
+            response = await self._easee.post(
+                CONNECTION_DETAILS_PATH.format(serial=serial), json=connection
+            )
             version = (await response.json())["version"]
-            await self._easee.post(APPLY_CONNECTION_PATH.format(serial=serial), json={"version": version})
-        except (ForbiddenServiceException, BadRequestException, ServerFailureException, KeyError) as error:
+            await self._easee.post(
+                APPLY_CONNECTION_PATH.format(serial=serial), json={"version": version}
+            )
+        except (
+            ForbiddenServiceException,
+            BadRequestException,
+            ServerFailureException,
+            KeyError,
+        ) as error:
             raise cloud_error(error) from error
-        _LOGGER.info("%s: OCPP connection set to %s", serial, connection["connectivityMode"])
+        _LOGGER.info(
+            "%s: OCPP connection set to %s", serial, connection["connectivityMode"]
+        )
 
 
 def cloud_error(error: Exception) -> OcppCloudError:

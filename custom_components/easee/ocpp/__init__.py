@@ -10,17 +10,17 @@ from homeassistant.helpers.entity import Entity
 from homeassistant.helpers.entity_platform import AddConfigEntryEntitiesCallback
 
 from ..const import DOMAIN
+from .authorization import RfidAuthorizer
+from .cloud_setup import EaseeOcppCloud
 from .const import (
     CONF_ALLOWED_ID_TAGS,
     CONF_OCPP_PASSWORD,
     CONF_SERIAL,
     SUBENTRY_TYPE_OCPP_CHARGER,
 )
-from .cloud_setup import EaseeOcppCloud
-from .authorization import RfidAuthorizer
+from .health import OcppHealthMonitor
 from .hub import OcppChargerConfig, OcppHub
 from .models import Serial
-from .health import OcppHealthMonitor
 from .removal import async_release_removed_chargers
 from .server import HUB_DATA_KEY, OcppWebSocketView
 
@@ -83,7 +83,11 @@ type ReloadRelevantSettings = tuple[object, ...]
 
 def reload_relevant_settings(entry: ConfigEntry) -> ReloadRelevantSettings:
     """Everything whose change needs a reload; the RFID whitelist is read live and is not part of it."""
-    options = {key: value for key, value in entry.options.items() if key != CONF_ALLOWED_ID_TAGS}
+    options = {
+        key: value
+        for key, value in entry.options.items()
+        if key != CONF_ALLOWED_ID_TAGS
+    }
     return (dict(entry.data), options, frozenset(entry.subentries))
 
 

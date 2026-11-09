@@ -18,8 +18,8 @@ import json
 import os
 import subprocess
 import sys
-import urllib.request
 from typing import Any
+import urllib.request
 
 EASEE_API = "https://api.easee.com"
 HA_SSH = os.environ.get("HA_SSH", "root@homeassistant.fritz.box")
@@ -31,7 +31,9 @@ type Serial = str
 type JsonObject = dict[str, Any]
 
 
-def easee_request(method: str, path: str, token: str | None = None, body: JsonObject | None = None) -> Any:
+def easee_request(
+    method: str, path: str, token: str | None = None, body: JsonObject | None = None
+) -> Any:
     """Call the Easee cloud API and return the parsed JSON (None for empty bodies)."""
     headers: dict[str, str] = {}
     if token is not None:
@@ -41,7 +43,9 @@ def easee_request(method: str, path: str, token: str | None = None, body: JsonOb
         # Easee answers 400 to a JSON content type without a body, so only send it with one.
         headers["Content-Type"] = "application/json"
         payload = json.dumps(body).encode()
-    request = urllib.request.Request(EASEE_API + path, data=payload, headers=headers, method=method)
+    request = urllib.request.Request(
+        EASEE_API + path, data=payload, headers=headers, method=method
+    )
     with urllib.request.urlopen(request) as response:
         raw = response.read()
     return json.loads(raw) if raw else None
@@ -49,8 +53,13 @@ def easee_request(method: str, path: str, token: str | None = None, body: JsonOb
 
 def login() -> str:
     """Return an access token for the account in EASEE_USERNAME / EASEE_PASSWORD."""
-    credentials = {"userName": os.environ["EASEE_USERNAME"], "password": os.environ["EASEE_PASSWORD"]}
-    token: str = easee_request("POST", "/api/accounts/login", body=credentials)["accessToken"]
+    credentials = {
+        "userName": os.environ["EASEE_USERNAME"],
+        "password": os.environ["EASEE_PASSWORD"],
+    }
+    token: str = easee_request("POST", "/api/accounts/login", body=credentials)[
+        "accessToken"
+    ]
     return token
 
 
@@ -58,7 +67,10 @@ def password_from_home_assistant(serial: Serial) -> str:
     """Read the basic auth password of the charger's OCPP subentry from HA storage."""
     storage = subprocess.run(
         ["ssh", HA_SSH, f"cat {HA_CONFIG_ENTRIES}"],
-        capture_output=True, text=True, encoding="utf-8", check=True,
+        capture_output=True,
+        text=True,
+        encoding="utf-8",
+        check=True,
     ).stdout
     for entry in json.loads(storage)["data"]["entries"]:
         for subentry in entry.get("subentries", []):
@@ -70,26 +82,50 @@ def password_from_home_assistant(serial: Serial) -> str:
 
 def show_connection(token: str, serial: Serial) -> None:
     """Print the stored connection details (without secrets)."""
-    details = easee_request("GET", f"/local-ocpp/v1/connection-details/{serial}", token) or {}
+    details = (
+        easee_request("GET", f"/local-ocpp/v1/connection-details/{serial}", token) or {}
+    )
     url = details.get("websocketConnectionArgs", {}).get("url")
-    print(f"{serial}: mode={details.get('connectivityMode')} url={url} chargePointId={details.get('chargePointId')}")
+    print(
+        f"{serial}: mode={details.get('connectivityMode')} url={url} chargePointId={details.get('chargePointId')}"
+    )
 
 
 def apply_connection(token: str, serial: Serial, connection: JsonObject) -> None:
     """Store the connection details and apply them to the charger."""
-    stored = easee_request("POST", f"/local-ocpp/v1/connection-details/{serial}", token, connection)
-    easee_request("POST", f"/local-ocpp/v1/connections/chargers/{serial}", token, {"version": stored["version"]})
+    stored = easee_request(
+        "POST", f"/local-ocpp/v1/connection-details/{serial}", token, connection
+    )
+    easee_request(
+        "POST",
+        f"/local-ocpp/v1/connections/chargers/{serial}",
+        token,
+        {"version": stored["version"]},
+    )
 
 
 def parse_arguments() -> argparse.Namespace:
     """Command line."""
-    parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
+    parser = argparse.ArgumentParser(
+        description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter
+    )
     parser.add_argument("serial")
     action = parser.add_mutually_exclusive_group(required=True)
-    action.add_argument("--url", help="OCPP server URL without the serial (the charger appends /<serial>)")
-    action.add_argument("--off", action="store_true", help="switch OCPP off (cloud only)")
-    action.add_argument("--show", action="store_true", help="only show the current setting")
-    parser.add_argument("--password-from-ha", action="store_true", help="basic auth password from the HA subentry")
+    action.add_argument(
+        "--url",
+        help="OCPP server URL without the serial (the charger appends /<serial>)",
+    )
+    action.add_argument(
+        "--off", action="store_true", help="switch OCPP off (cloud only)"
+    )
+    action.add_argument(
+        "--show", action="store_true", help="only show the current setting"
+    )
+    parser.add_argument(
+        "--password-from-ha",
+        action="store_true",
+        help="basic auth password from the HA subentry",
+    )
     return parser.parse_args()
 
 
@@ -107,7 +143,9 @@ def main() -> None:
             "websocketConnectionArgs": {"url": arguments.url},
         }
         if arguments.password_from_ha:
-            connection["basicAuthPassword"] = password_from_home_assistant(arguments.serial)
+            connection["basicAuthPassword"] = password_from_home_assistant(
+                arguments.serial
+            )
         apply_connection(token, arguments.serial, connection)
     show_connection(token, arguments.serial)
 

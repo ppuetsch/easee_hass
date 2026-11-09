@@ -64,4 +64,7 @@ class OcppBinarySensor(OcppEntity, BinarySensorEntity):
 
 def ocpp_binary_sensors(hub: OcppHub, serial: Serial) -> list[OcppBinarySensor]:
     """All OCPP binary sensors of one charger."""
-    return [OcppBinarySensor(hub, serial, description) for description in BINARY_SENSOR_DESCRIPTIONS]
+    return [
+        OcppBinarySensor(hub, serial, description)
+        for description in BINARY_SENSOR_DESCRIPTIONS
+    ]

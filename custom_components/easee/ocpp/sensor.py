@@ -12,6 +12,7 @@ from homeassistant.components.sensor import (
     SensorEntityDescription,
     SensorStateClass,
 )
+from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import (
     EntityCategory,
     UnitOfElectricCurrent,
@@ -21,13 +22,15 @@ from homeassistant.const import (
     UnitOfTemperature,
     UnitOfTime,
 )
-from homeassistant.helpers.typing import StateType
-
-from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddConfigEntryEntitiesCallback
+from homeassistant.helpers.typing import StateType
 
-from .configuration_entities import ConfigurationKeyEntity, async_add_configuration_entities, is_read_only_key
+from .configuration_entities import (
+    ConfigurationKeyEntity,
+    async_add_configuration_entities,
+    is_read_only_key,
+)
 from .entity import OcppEntity
 from .hub import OcppHub
 from .models import (
@@ -91,7 +94,7 @@ def firmware_version(state: ChargePointState) -> str | None:
 def phase_sensor(
     measurand: str, phase: str, key: str, device_class: SensorDeviceClass, unit: str
 ) -> OcppSensorEntityDescription:
-    """A measurand reported per phase."""
+    """Describe a measurand reported per phase."""
     return OcppSensorEntityDescription(
         key=f"{key}_{phase.lower()}",
         translation_key=f"{key}_{phase.lower()}",
@@ -165,11 +168,23 @@ SENSOR_DESCRIPTIONS: tuple[OcppSensorEntityDescription, ...] = (
         value_fn=lambda state: state.measurement(MEASURAND_TEMPERATURE),
     ),
     *(
-        phase_sensor(MEASURAND_CURRENT, phase, "current", SensorDeviceClass.CURRENT, UnitOfElectricCurrent.AMPERE)
+        phase_sensor(
+            MEASURAND_CURRENT,
+            phase,
+            "current",
+            SensorDeviceClass.CURRENT,
+            UnitOfElectricCurrent.AMPERE,
+        )
         for phase in PHASES
     ),
     *(
-        phase_sensor(MEASURAND_VOLTAGE, phase, "voltage", SensorDeviceClass.VOLTAGE, UnitOfElectricPotential.VOLT)
+        phase_sensor(
+            MEASURAND_VOLTAGE,
+            phase,
+            "voltage",
+            SensorDeviceClass.VOLTAGE,
+            UnitOfElectricPotential.VOLT,
+        )
         for phase in PHASES
     ),
     OcppSensorEntityDescription(
@@ -237,7 +252,10 @@ class OcppLastCardSensor(OcppSensor):
         attempt = self.charge_point_state.last_authorization
         if attempt is None:
             return None
-        return {"accepted": attempt.accepted, "timestamp": attempt.timestamp.isoformat()}
+        return {
+            "accepted": attempt.accepted,
+            "timestamp": attempt.timestamp.isoformat(),
+        }
 
 
 class OcppConfigurationSensor(ConfigurationKeyEntity, SensorEntity):
@@ -252,10 +270,14 @@ class OcppConfigurationSensor(ConfigurationKeyEntity, SensorEntity):
 
 
 def async_setup_ocpp_configuration_sensors(
-    hass: HomeAssistant, entry: ConfigEntry, async_add_entities: AddConfigEntryEntitiesCallback
+    hass: HomeAssistant,
+    entry: ConfigEntry,
+    async_add_entities: AddConfigEntryEntitiesCallback,
 ) -> None:
     """One diagnostic sensor per read-only configuration key."""
-    async_add_configuration_entities(hass, entry, async_add_entities, is_read_only_key, OcppConfigurationSensor)
+    async_add_configuration_entities(
+        hass, entry, async_add_entities, is_read_only_key, OcppConfigurationSensor
+    )
 
 
 def ocpp_sensors(hub: OcppHub, serial: Serial) -> list[OcppSensor]:

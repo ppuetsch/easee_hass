@@ -16,7 +16,11 @@ from typing import Any
 
 import probatio
 
-from homeassistant.config_entries import SOURCE_RECONFIGURE, ConfigSubentryFlow, SubentryFlowResult
+from homeassistant.config_entries import (
+    SOURCE_RECONFIGURE,
+    ConfigSubentryFlow,
+    SubentryFlowResult,
+)
 from homeassistant.helpers.selector import (
     BooleanSelector,
     SelectOptionDict,
@@ -27,7 +31,12 @@ from homeassistant.helpers.selector import (
 
 from ..const import DOMAIN
 from .address import normalised_url, suggested_ocpp_url, url_problem
-from .cloud_setup import ChargerReadiness, EaseeOcppCloud, OcppCloudError, charger_readiness
+from .cloud_setup import (
+    ChargerReadiness,
+    EaseeOcppCloud,
+    OcppCloudError,
+    charger_readiness,
+)
 from .const import CONF_OCPP_PASSWORD, CONF_OCPP_URL, CONF_SERIAL, OCPP_PASSWORD_LENGTH
 from .hub import OcppChargerConfig, OcppHub
 from .server import HUB_DATA_KEY
@@ -46,7 +55,9 @@ CHECK_UNKNOWN = "❔"
 
 def generate_ocpp_password() -> str:
     """Random basic auth password within the Easee length limit."""
-    return "".join(secrets.choice(PASSWORD_ALPHABET) for _ in range(OCPP_PASSWORD_LENGTH))
+    return "".join(
+        secrets.choice(PASSWORD_ALPHABET) for _ in range(OCPP_PASSWORD_LENGTH)
+    )
 
 
 def check_mark(passed: bool | None) -> str:
@@ -60,7 +71,9 @@ def readiness_placeholders(readiness: ChargerReadiness) -> dict[str, str]:
     """Checklist values shown in the precondition step."""
     firmware_known = readiness.firmware is not None
     return {
-        "firmware_check": check_mark(readiness.firmware_supports_ocpp() if firmware_known else None),
+        "firmware_check": check_mark(
+            readiness.firmware_supports_ocpp() if firmware_known else None
+        ),
         "firmware": str(readiness.firmware) if firmware_known else "?",
         "wifi_check": check_mark(readiness.is_on_wifi()),
         "operator_check": check_mark(readiness.operator_is_easee()),
@@ -90,7 +103,9 @@ class OcppChargerSubentryFlow(ConfigSubentryFlow):
         self._cloud_applied = False
         self._connect_task: asyncio.Task[ConnectOutcome] | None = None
 
-    async def async_step_user(self, user_input: dict[str, Any] | None = None) -> SubentryFlowResult:
+    async def async_step_user(
+        self, user_input: dict[str, Any] | None = None
+    ) -> SubentryFlowResult:
         """Let the user pick a charger that is not connected via OCPP yet."""
         if self._hub() is None:
             return self.async_abort(reason="integration_not_loaded")
@@ -103,16 +118,21 @@ class OcppChargerSubentryFlow(ConfigSubentryFlow):
             return await self.async_step_prerequisites()
         return self.async_show_form(
             step_id="user",
-            data_schema=probatio.Schema({probatio.Required(CONF_SERIAL): charger_selector(choices)}),
+            data_schema=probatio.Schema(
+                {probatio.Required(CONF_SERIAL): charger_selector(choices)}
+            ),
         )
 
-    async def async_step_prerequisites(self, user_input: dict[str, Any] | None = None) -> SubentryFlowResult:
+    async def async_step_prerequisites(
+        self, user_input: dict[str, Any] | None = None
+    ) -> SubentryFlowResult:
         """Show what Easee requires and offer to lift a dynamic circuit limit."""
         product_data = self._product_data()
         readiness = charger_readiness(product_data.state, product_data.config)
         if readiness.firmware is not None and not readiness.firmware_supports_ocpp():
             return self.async_abort(
-                reason="firmware_too_old", description_placeholders={"firmware": str(readiness.firmware)}
+                reason="firmware_too_old",
+                description_placeholders={"firmware": str(readiness.firmware)},
             )
         if user_input is not None:
             if user_input.get(CONF_RESET_CIRCUIT_LIMIT):
@@ -120,14 +140,21 @@ class OcppChargerSubentryFlow(ConfigSubentryFlow):
             return await self.async_step_address()
         schema: dict[Any, Any] = {}
         if readiness.circuit_is_limited():
-            schema[probatio.Optional(CONF_RESET_CIRCUIT_LIMIT, default=True)] = BooleanSelector()
+            schema[probatio.Optional(CONF_RESET_CIRCUIT_LIMIT, default=True)] = (
+                BooleanSelector()
+            )
         return self.async_show_form(
             step_id="prerequisites",
             data_schema=probatio.Schema(schema),
-            description_placeholders={"charger": self._charger_name, **readiness_placeholders(readiness)},
+            description_placeholders={
+                "charger": self._charger_name,
+                **readiness_placeholders(readiness),
+            },
         )
 
-    async def async_step_address(self, user_input: dict[str, Any] | None = None) -> SubentryFlowResult:
+    async def async_step_address(
+        self, user_input: dict[str, Any] | None = None
+    ) -> SubentryFlowResult:
         """Confirm the URL the charger uses to reach Home Assistant."""
         errors: dict[str, str] = {}
         if self._address_error is not None:
@@ -144,22 +171,34 @@ class OcppChargerSubentryFlow(ConfigSubentryFlow):
         default_url = self._url or await suggested_ocpp_url(self.hass)
         return self.async_show_form(
             step_id="address",
-            data_schema=probatio.Schema({probatio.Required(CONF_OCPP_URL, default=default_url): TextSelector()}),
-            description_placeholders={"charger": self._charger_name, "serial": self._serial},
+            data_schema=probatio.Schema(
+                {probatio.Required(CONF_OCPP_URL, default=default_url): TextSelector()}
+            ),
+            description_placeholders={
+                "charger": self._charger_name,
+                "serial": self._serial,
+            },
             errors=errors,
         )
 
-    async def async_step_connect(self, user_input: dict[str, Any] | None = None) -> SubentryFlowResult:
+    async def async_step_connect(
+        self, user_input: dict[str, Any] | None = None
+    ) -> SubentryFlowResult:
         """Switch the charger over via the Easee cloud and wait until it connects."""
         progress_was_shown = self._connect_task is not None
         if self._connect_task is None:
-            self._connect_task = self.hass.async_create_task(self._switch_over_and_wait())
+            self._connect_task = self.hass.async_create_task(
+                self._switch_over_and_wait()
+            )
         if not self._connect_task.done():
             return self.async_show_progress(
                 step_id="connect",
                 progress_action="wait_for_charger",
                 progress_task=self._connect_task,
-                description_placeholders={"charger": self._charger_name, "url": self._url},
+                description_placeholders={
+                    "charger": self._charger_name,
+                    "url": self._url,
+                },
             )
         next_step = self._next_step_after(self._connect_task.result())
         self._connect_task = None
@@ -177,15 +216,19 @@ class OcppChargerSubentryFlow(ConfigSubentryFlow):
             return "address"
         return "connection_failed"
 
-    async def async_step_connection_failed(self, user_input: dict[str, Any] | None = None) -> SubentryFlowResult:
-        """The charger did not connect in time: let the user decide."""
+    async def async_step_connection_failed(
+        self, user_input: dict[str, Any] | None = None
+    ) -> SubentryFlowResult:
+        """Let the user decide what to do when the charger did not connect in time."""
         return self.async_show_menu(
             step_id="connection_failed",
             menu_options=["connect", "address", "rollback", "finish"],
             description_placeholders={"charger": self._charger_name, "url": self._url},
         )
 
-    async def async_step_rollback(self, user_input: dict[str, Any] | None = None) -> SubentryFlowResult:
+    async def async_step_rollback(
+        self, user_input: dict[str, Any] | None = None
+    ) -> SubentryFlowResult:
         """Switch the charger back to cloud only."""
         try:
             await self._cloud().disable(self._serial)
@@ -193,7 +236,9 @@ class OcppChargerSubentryFlow(ConfigSubentryFlow):
             return self.async_abort(reason=error.reason)
         return self.async_abort(reason="rolled_back")
 
-    async def async_step_reconfigure(self, user_input: dict[str, Any] | None = None) -> SubentryFlowResult:
+    async def async_step_reconfigure(
+        self, user_input: dict[str, Any] | None = None
+    ) -> SubentryFlowResult:
         """Change the address of a configured charger; the password stays the same."""
         subentry = self._get_reconfigure_subentry()
         self._serial = subentry.data[CONF_SERIAL]
@@ -202,15 +247,23 @@ class OcppChargerSubentryFlow(ConfigSubentryFlow):
         self._url = subentry.data.get(CONF_OCPP_URL, "")
         return await self.async_step_address()
 
-    async def async_step_finish(self, user_input: dict[str, Any] | None = None) -> SubentryFlowResult:
+    async def async_step_finish(
+        self, user_input: dict[str, Any] | None = None
+    ) -> SubentryFlowResult:
         """Store the charger; the integration reloads and serves it from now on."""
         if self.source == SOURCE_RECONFIGURE:
             return self.async_update_and_abort(
-                self._get_entry(), self._get_reconfigure_subentry(), data_updates={CONF_OCPP_URL: self._url}
+                self._get_entry(),
+                self._get_reconfigure_subentry(),
+                data_updates={CONF_OCPP_URL: self._url},
             )
         return self.async_create_entry(
             title=f"OCPP {self._charger_name}",
-            data={CONF_SERIAL: self._serial, CONF_OCPP_PASSWORD: self._password, CONF_OCPP_URL: self._url},
+            data={
+                CONF_SERIAL: self._serial,
+                CONF_OCPP_PASSWORD: self._password,
+                CONF_OCPP_URL: self._url,
+            },
             unique_id=self._serial,
         )
 
@@ -227,9 +280,13 @@ class OcppChargerSubentryFlow(ConfigSubentryFlow):
             except OcppCloudError as error:
                 return ConnectOutcome(connected=False, cloud_error=error.reason)
             self._cloud_applied = True
-        return ConnectOutcome(connected=await wait_for_connection(hub, self._serial, previous_connection))
+        return ConnectOutcome(
+            connected=await wait_for_connection(hub, self._serial, previous_connection)
+        )
 
-    async def _lift_circuit_limit(self, product_data: Any, readiness: ChargerReadiness) -> None:
+    async def _lift_circuit_limit(
+        self, product_data: Any, readiness: ChargerReadiness
+    ) -> None:
         maximum = readiness.lowest_circuit_maximum()
         if maximum is not None and product_data.circuit is not None:
             await product_data.circuit.set_dynamic_current(maximum)
@@ -245,10 +302,16 @@ class OcppChargerSubentryFlow(ConfigSubentryFlow):
         return EaseeOcppCloud(self._controller().easee)
 
     def _product_data(self) -> Any:
-        return next(data for data in self._controller().chargers_data if data.product.id == self._serial)
+        return next(
+            data
+            for data in self._controller().chargers_data
+            if data.product.id == self._serial
+        )
 
     def _unconfigured_chargers(self) -> ChargerChoices:
-        configured = {subentry.unique_id for subentry in self._get_entry().subentries.values()}
+        configured = {
+            subentry.unique_id for subentry in self._get_entry().subentries.values()
+        }
         return {
             charger.id: f"{charger.name} ({charger.id})"
             for charger in self._controller().get_chargers()
@@ -256,7 +319,9 @@ class OcppChargerSubentryFlow(ConfigSubentryFlow):
         }
 
 
-async def wait_for_connection(hub: OcppHub, serial: str, previous_connection: datetime | None) -> bool:
+async def wait_for_connection(
+    hub: OcppHub, serial: str, previous_connection: datetime | None
+) -> bool:
     """Wait until the charger has opened a websocket newer than previous_connection, at most CONNECT_TIMEOUT."""
 
     def has_new_connection() -> bool:
@@ -274,5 +339,7 @@ async def wait_for_connection(hub: OcppHub, serial: str, previous_connection: da
 
 def charger_selector(choices: ChargerChoices) -> SelectSelector:
     """Dropdown of chargers, showing name and serial."""
-    options = [SelectOptionDict(value=serial, label=label) for serial, label in choices.items()]
+    options = [
+        SelectOptionDict(value=serial, label=label) for serial, label in choices.items()
+    ]
     return SelectSelector(SelectSelectorConfig(options=options))

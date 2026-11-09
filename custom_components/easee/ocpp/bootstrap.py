@@ -51,7 +51,9 @@ class ChargePointBootstrapper:
     async def refresh(self) -> None:
         """Re-read everything without changing the configuration."""
         await self._read_configuration()
-        await self._best_effort("GetCompositeSchedule", self._charge_point.read_composite_limit())
+        await self._best_effort(
+            "GetCompositeSchedule", self._charge_point.read_composite_limit()
+        )
         await self._request_current_status()
 
     async def _configure_measurands(self) -> None:
@@ -80,7 +82,9 @@ class ChargePointBootstrapper:
         )
 
     async def _read_configuration(self) -> None:
-        await self._best_effort("GetConfiguration", self._charge_point.read_configuration())
+        await self._best_effort(
+            "GetConfiguration", self._charge_point.read_configuration()
+        )
         # Easee answers at most one key per request (GetConfigurationMaxKeys = 1).
         for hidden_key in EASEE_HIDDEN_CONFIGURATION_KEYS:
             await self._best_effort(
@@ -93,7 +97,9 @@ class ChargePointBootstrapper:
             "ChargePointMaxProfile",
             self._charge_point.set_charge_point_max_current(self._max_current_amps),
         )
-        await self._best_effort("GetCompositeSchedule", self._charge_point.read_composite_limit())
+        await self._best_effort(
+            "GetCompositeSchedule", self._charge_point.read_composite_limit()
+        )
 
     async def _request_current_status(self) -> None:
         await self._best_effort(

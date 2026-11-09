@@ -100,7 +100,11 @@ class ChargePointState:
 
     def disconnected_longer_than(self, duration: timedelta, now: datetime) -> bool:
         """Return True if the charger has been offline for at least duration."""
-        return not self.connected and self.disconnected_since is not None and now - self.disconnected_since >= duration
+        return (
+            not self.connected
+            and self.disconnected_since is not None
+            and now - self.disconnected_since >= duration
+        )
 
     def has_transaction(self) -> bool:
         """Return True while a charging session is open."""
@@ -110,7 +114,9 @@ class ChargePointState:
         """Return True if the connector reports that energy flows."""
         return self.connector_status == STATUS_CHARGING
 
-    def measurement(self, measurand: Measurand, phase: Phase | None = None) -> float | None:
+    def measurement(
+        self, measurand: Measurand, phase: Phase | None = None
+    ) -> float | None:
         """Return the latest value of a measurand, or None if never reported."""
         sample = self.measurements.get((measurand, phase))
         return sample.value if sample is not None else None

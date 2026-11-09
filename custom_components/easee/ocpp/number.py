@@ -2,7 +2,12 @@
 
 from __future__ import annotations
 
-from homeassistant.components.number import NumberDeviceClass, NumberEntity, NumberEntityDescription, NumberMode
+from homeassistant.components.number import (
+    NumberDeviceClass,
+    NumberEntity,
+    NumberEntityDescription,
+    NumberMode,
+)
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import PERCENTAGE, UnitOfElectricCurrent, UnitOfTime
 from homeassistant.core import HomeAssistant
@@ -10,7 +15,11 @@ from homeassistant.exceptions import HomeAssistantError
 from homeassistant.helpers.entity_platform import AddConfigEntryEntitiesCallback
 
 from .charge_point import CommandFailedError
-from .configuration_entities import ConfigurationKeyEntity, async_add_configuration_entities, is_number_key
+from .configuration_entities import (
+    ConfigurationKeyEntity,
+    async_add_configuration_entities,
+    is_number_key,
+)
 from .entity import OcppEntity
 from .hub import OcppHub
 from .models import Serial
@@ -63,7 +72,9 @@ class OcppConfigurationNumber(ConfigurationKeyEntity, NumberEntity):
     def __init__(self, hub: OcppHub, serial: Serial, key: str) -> None:
         """Apply the known range of the key."""
         super().__init__(hub, serial, key)
-        minimum, maximum, unit = KNOWN_KEY_RANGES.get(key, (0, GENERIC_KEY_MAXIMUM, None))
+        minimum, maximum, unit = KNOWN_KEY_RANGES.get(
+            key, (0, GENERIC_KEY_MAXIMUM, None)
+        )
         self._attr_native_min_value = minimum
         self._attr_native_max_value = maximum
         self._attr_native_unit_of_measurement = unit
@@ -80,12 +91,16 @@ class OcppConfigurationNumber(ConfigurationKeyEntity, NumberEntity):
 
 
 def ocpp_numbers(hub: OcppHub, serial: Serial) -> list[NumberEntity]:
-    """Fixed number entities of one charger."""
+    """Create the fixed number entities of one charger."""
     return [OcppMaxCurrentNumber(hub, serial, MAX_CURRENT_DESCRIPTION)]
 
 
 def async_setup_ocpp_numbers(
-    hass: HomeAssistant, entry: ConfigEntry, async_add_entities: AddConfigEntryEntitiesCallback
+    hass: HomeAssistant,
+    entry: ConfigEntry,
+    async_add_entities: AddConfigEntryEntitiesCallback,
 ) -> None:
-    """Fixed numbers plus one per numeric configuration key."""
-    async_add_configuration_entities(hass, entry, async_add_entities, is_number_key, OcppConfigurationNumber)
+    """Add one number per numeric configuration key."""
+    async_add_configuration_entities(
+        hass, entry, async_add_entities, is_number_key, OcppConfigurationNumber
+    )

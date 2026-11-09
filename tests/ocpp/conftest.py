@@ -3,11 +3,11 @@
 from __future__ import annotations
 
 import asyncio
-from contextlib import suppress
 from collections.abc import AsyncIterator, Callable, Coroutine
-from typing import Any
+from contextlib import suppress
 from datetime import timedelta
 from ipaddress import IPv4Address
+from typing import Any
 
 from aiohttp import ClientConnectionResetError, ClientWebSocketResponse
 import pytest
@@ -47,11 +47,14 @@ def no_bootstrap_delay(monkeypatch: pytest.MonkeyPatch) -> None:
 
 @pytest.fixture(autouse=True)
 def fast_waiting(monkeypatch: pytest.MonkeyPatch) -> None:
-    """The wizard polls quickly and gives up after a second instead of ten minutes."""
+    """Make the wizard poll quickly and give up after a second instead of ten minutes."""
     monkeypatch.setattr(
-        "custom_components.easee.ocpp.config_flow.CONNECT_POLL_INTERVAL", timedelta(milliseconds=20)
+        "custom_components.easee.ocpp.config_flow.CONNECT_POLL_INTERVAL",
+        timedelta(milliseconds=20),
     )
-    monkeypatch.setattr("custom_components.easee.ocpp.config_flow.CONNECT_TIMEOUT", timedelta(seconds=1))
+    monkeypatch.setattr(
+        "custom_components.easee.ocpp.config_flow.CONNECT_TIMEOUT", timedelta(seconds=1)
+    )
 
 
 @pytest.fixture(autouse=True)
@@ -61,14 +64,20 @@ def home_assistant_address(monkeypatch: pytest.MonkeyPatch) -> None:
     async def own_addresses(hass: HomeAssistant) -> list[IPv4Address]:
         return [IPv4Address(HOME_ASSISTANT_IP)]
 
-    monkeypatch.setattr("custom_components.easee.ocpp.health.async_get_enabled_source_ips", own_addresses)
+    monkeypatch.setattr(
+        "custom_components.easee.ocpp.health.async_get_enabled_source_ips",
+        own_addresses,
+    )
 
 
 @pytest.fixture
 def fake_cloud(monkeypatch: pytest.MonkeyPatch) -> type[FakeController]:
     """Replace the cloud controller; the account has two chargers."""
     FakeController.reset(
-        [FakeCloudCharger(OCPP_SERIAL, "Garage"), FakeCloudCharger(CLOUD_ONLY_SERIAL, "Carport")]
+        [
+            FakeCloudCharger(OCPP_SERIAL, "Garage"),
+            FakeCloudCharger(CLOUD_ONLY_SERIAL, "Carport"),
+        ]
     )
     monkeypatch.setattr("custom_components.easee.Controller", FakeController)
     return FakeController
@@ -84,7 +93,11 @@ def config_entry(hass: HomeAssistant) -> MockConfigEntry:
         options={"monitored_sites": ["Home"], CONF_ALLOWED_ID_TAGS: [ALLOWED_CARD]},
         subentries_data=[
             ConfigSubentryData(
-                data={CONF_SERIAL: OCPP_SERIAL, CONF_OCPP_PASSWORD: OCPP_PASSWORD, CONF_OCPP_URL: OCPP_URL},
+                data={
+                    CONF_SERIAL: OCPP_SERIAL,
+                    CONF_OCPP_PASSWORD: OCPP_PASSWORD,
+                    CONF_OCPP_URL: OCPP_URL,
+                },
                 subentry_type=SUBENTRY_TYPE_OCPP_CHARGER,
                 title=f"OCPP Garage ({OCPP_SERIAL})",
                 unique_id=OCPP_SERIAL,
@@ -99,7 +112,7 @@ def config_entry(hass: HomeAssistant) -> MockConfigEntry:
 async def loaded_entry(
     hass: HomeAssistant, config_entry: MockConfigEntry, fake_cloud: type[FakeController]
 ) -> MockConfigEntry:
-    """The integration, set up."""
+    """Set up the integration."""
     assert await hass.config_entries.async_setup(config_entry.entry_id)
     await hass.async_block_till_done()
     return config_entry
@@ -109,7 +122,7 @@ async def loaded_entry(
 async def connect_charger(
     loaded_entry: MockConfigEntry, hass_client_no_auth
 ) -> AsyncIterator[ConnectCharger]:
-    """Factory that connects a fake charger and runs its message loop."""
+    """Provide a factory that connects a fake charger and runs its message loop."""
     websockets: list[ClientWebSocketResponse] = []
     loops: list[asyncio.Task[None]] = []
 

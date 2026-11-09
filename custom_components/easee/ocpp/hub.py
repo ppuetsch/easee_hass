@@ -13,8 +13,8 @@ from homeassistant.helpers.dispatcher import async_dispatcher_send
 from homeassistant.helpers.storage import Store
 from homeassistant.util import dt as dt_util
 
-from .bootstrap import ChargePointBootstrapper
 from .authorization import normalised_id_tag
+from .bootstrap import ChargePointBootstrapper
 from .charge_point import CommandFailedError, EaseeChargePoint, IdTagAuthorizer
 from .const import BOOTSTRAP_DELAY_AFTER_CONNECT, SIGNAL_OCPP_STATE_UPDATED
 from .models import ChargePointState, IdTag, Serial
@@ -72,13 +72,16 @@ class OcppHub:
         self.authorizer = authorizer
         started_at = dt_util.utcnow()
         self._states = {
-            serial: ChargePointState(serial, disconnected_since=started_at) for serial in self._configs
+            serial: ChargePointState(serial, disconnected_since=started_at)
+            for serial in self._configs
         }
         self._charge_points: dict[Serial, EaseeChargePoint] = {}
         self._connections: dict[Serial, AiohttpOcppConnection] = {}
         self._bootstrapped: dict[Serial, EaseeChargePoint] = {}
         self._max_current: dict[Serial, float] = {}
-        self._store: Store[dict[Serial, float]] = Store(hass, STORAGE_VERSION, STORAGE_KEY)
+        self._store: Store[dict[Serial, float]] = Store(
+            hass, STORAGE_VERSION, STORAGE_KEY
+        )
 
     async def async_load(self) -> None:
         """Load the limits HA set before the last restart."""
@@ -87,7 +90,10 @@ class OcppHub:
     def expect_charger(self, config: OcppChargerConfig) -> None:
         """Accept a charger that is being set up and has no subentry yet."""
         self._configs[config.serial] = config
-        self._states.setdefault(config.serial, ChargePointState(config.serial, disconnected_since=dt_util.utcnow()))
+        self._states.setdefault(
+            config.serial,
+            ChargePointState(config.serial, disconnected_since=dt_util.utcnow()),
+        )
 
     def serials(self) -> list[Serial]:
         """Return the serials of all configured chargers."""
@@ -101,7 +107,9 @@ class OcppHub:
         """Return True if the charger has an OCPP subentry."""
         return serial in self._configs
 
-    def password_matches(self, serial: Serial, credentials: BasicCredentials | None) -> bool:
+    def password_matches(
+        self, serial: Serial, credentials: BasicCredentials | None
+    ) -> bool:
         """Check basic auth: user must be the serial, password the one from the subentry."""
         if credentials is None:
             return False
@@ -146,7 +154,9 @@ class OcppHub:
         charge_point = self.charge_point(serial)
         await ChargePointBootstrapper(charge_point, self.max_current(serial)).refresh()
 
-    async def async_serve(self, serial: Serial, connection: AiohttpOcppConnection) -> None:
+    async def async_serve(
+        self, serial: Serial, connection: AiohttpOcppConnection
+    ) -> None:
         """Run one websocket connection until it closes."""
         await self._replace_previous_connection(serial)
         charge_point = EaseeChargePoint(
@@ -168,7 +178,9 @@ class OcppHub:
             _LOGGER.info("%s disconnected: %s", serial, reason)
         except Exception:
             # The ocpp library ends its message loop on any handler error; close cleanly so the charger reconnects.
-            _LOGGER.exception("%s: OCPP message loop failed, closing the connection", serial)
+            _LOGGER.exception(
+                "%s: OCPP message loop failed, closing the connection", serial
+            )
             await connection.close()
         finally:
             self._forget_if_current(serial, charge_point)
@@ -198,7 +210,9 @@ class OcppHub:
         _LOGGER.info("%s connected via OCPP", serial)
         self.notify(serial)
 
-    def _forget_if_current(self, serial: Serial, charge_point: EaseeChargePoint) -> None:
+    def _forget_if_current(
+        self, serial: Serial, charge_point: EaseeChargePoint
+    ) -> None:
         if self._charge_points.get(serial) is not charge_point:
             return
         del self._charge_points[serial]

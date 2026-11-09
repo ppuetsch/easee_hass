@@ -10,7 +10,9 @@ from .ocpp.number import async_setup_ocpp_numbers, ocpp_numbers
 
 
 async def async_setup_entry(
-    hass: HomeAssistant, entry: ConfigEntry, async_add_entities: AddConfigEntryEntitiesCallback
+    hass: HomeAssistant,
+    entry: ConfigEntry,
+    async_add_entities: AddConfigEntryEntitiesCallback,
 ) -> None:
     """Set up number platform."""
     controller = hass.data[DOMAIN]["controller"]

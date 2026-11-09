@@ -30,14 +30,21 @@ async def start_flow(hass: HomeAssistant, entry: MockConfigEntry) -> FlowResult:
     """Open the wizard."""
     return dict(
         await hass.config_entries.subentries.async_init(
-            (entry.entry_id, SUBENTRY_TYPE_OCPP_CHARGER), context={"source": SOURCE_USER}
+            (entry.entry_id, SUBENTRY_TYPE_OCPP_CHARGER),
+            context={"source": SOURCE_USER},
         )
     )
 
 
-async def submit(hass: HomeAssistant, result: FlowResult, user_input: dict[str, Any] | None = None) -> FlowResult:
+async def submit(
+    hass: HomeAssistant, result: FlowResult, user_input: dict[str, Any] | None = None
+) -> FlowResult:
     """Submit one step."""
-    return dict(await hass.config_entries.subentries.async_configure(result["flow_id"], user_input))
+    return dict(
+        await hass.config_entries.subentries.async_configure(
+            result["flow_id"], user_input
+        )
+    )
 
 
 async def until_address(hass: HomeAssistant, entry: MockConfigEntry) -> FlowResult:
@@ -60,7 +67,9 @@ async def finish_progress(hass: HomeAssistant, result: FlowResult) -> FlowResult
     return result
 
 
-async def test_only_unconfigured_chargers_are_offered(hass: HomeAssistant, loaded_entry: MockConfigEntry) -> None:
+async def test_only_unconfigured_chargers_are_offered(
+    hass: HomeAssistant, loaded_entry: MockConfigEntry
+) -> None:
     """The charger that already has a subentry is not in the list."""
     result = await start_flow(hass, loaded_entry)
     selector = result["data_schema"].schema[CONF_SERIAL]
@@ -74,7 +83,9 @@ async def test_happy_path_switches_the_charger_and_waits_for_it(
     """The wizard stores the connection in the cloud, the charger connects, the subentry is created."""
 
     def charger_connects_after_apply(serial: str, details: dict[str, Any]) -> None:
-        asyncio.get_running_loop().create_task(connect_charger(serial, details["basicAuthPassword"]))
+        asyncio.get_running_loop().create_task(
+            connect_charger(serial, details["basicAuthPassword"])
+        )
 
     FakeController.easee.on_apply = charger_connects_after_apply
     result = await until_address(hass, loaded_entry)
@@ -87,13 +98,19 @@ async def test_happy_path_switches_the_charger_and_waits_for_it(
     stored = FakeController.easee.stored[CLOUD_ONLY_SERIAL]
     assert stored["connectivityMode"] == "DualProtocol"
     assert stored["websocketConnectionArgs"]["url"] == HA_URL
-    subentry = next(sub for sub in loaded_entry.subentries.values() if sub.unique_id == CLOUD_ONLY_SERIAL)
+    subentry = next(
+        sub
+        for sub in loaded_entry.subentries.values()
+        if sub.unique_id == CLOUD_ONLY_SERIAL
+    )
     assert subentry.data[CONF_OCPP_PASSWORD] == stored["basicAuthPassword"]
     assert len(subentry.data[CONF_OCPP_PASSWORD]) == 20
     assert subentry.data[CONF_OCPP_URL] == HA_URL
 
 
-async def test_timeout_offers_rollback(hass: HomeAssistant, loaded_entry: MockConfigEntry) -> None:
+async def test_timeout_offers_rollback(
+    hass: HomeAssistant, loaded_entry: MockConfigEntry
+) -> None:
     """Without connection the user can switch the charger back to cloud only."""
     result = await until_address(hass, loaded_entry)
     result = await submit(hass, result, {CONF_OCPP_URL: HA_URL})
@@ -105,7 +122,9 @@ async def test_timeout_offers_rollback(hass: HomeAssistant, loaded_entry: MockCo
 
     assert result["type"] is FlowResultType.ABORT
     assert result["reason"] == "rolled_back"
-    assert FakeController.easee.stored[CLOUD_ONLY_SERIAL]["connectivityMode"] == "OcppOff"
+    assert (
+        FakeController.easee.stored[CLOUD_ONLY_SERIAL]["connectivityMode"] == "OcppOff"
+    )
 
 
 @pytest.mark.parametrize(
@@ -128,7 +147,9 @@ async def test_unusable_addresses_are_rejected(
     assert FakeController.easee.applied == []
 
 
-async def test_cloud_refusal_returns_to_the_address_step(hass: HomeAssistant, loaded_entry: MockConfigEntry) -> None:
+async def test_cloud_refusal_returns_to_the_address_step(
+    hass: HomeAssistant, loaded_entry: MockConfigEntry
+) -> None:
     """A user without permission sees why instead of waiting ten minutes."""
     FakeController.easee.forbidden = True
     result = await until_address(hass, loaded_entry)
@@ -138,7 +159,9 @@ async def test_cloud_refusal_returns_to_the_address_step(hass: HomeAssistant, lo
     assert result["errors"] == {"base": "ocpp_forbidden"}
 
 
-async def test_circuit_limit_can_be_lifted(hass: HomeAssistant, loaded_entry: MockConfigEntry) -> None:
+async def test_circuit_limit_can_be_lifted(
+    hass: HomeAssistant, loaded_entry: MockConfigEntry
+) -> None:
     """A dynamic circuit limit below the fuse is shown and can be lifted."""
     product = FakeController.product_data(CLOUD_ONLY_SERIAL)
     product.state["dynamicCircuitCurrentP1"] = 10
@@ -153,7 +176,9 @@ async def test_circuit_limit_can_be_lifted(hass: HomeAssistant, loaded_entry: Mo
     assert product.circuit.dynamic_current_requests == [32]
 
 
-async def test_old_firmware_aborts(hass: HomeAssistant, loaded_entry: MockConfigEntry) -> None:
+async def test_old_firmware_aborts(
+    hass: HomeAssistant, loaded_entry: MockConfigEntry
+) -> None:
     """Firmware below 344 cannot do local OCPP."""
     FakeController.product_data(CLOUD_ONLY_SERIAL).state["chargerFirmware"] = 300
     result = await start_flow(hass, loaded_entry)
@@ -178,9 +203,14 @@ async def test_removing_a_subentry_switches_the_charger_back(
     assert FakeController.easee.stored[OCPP_SERIAL]["connectivityMode"] == "OcppOff"
 
 
-async def test_removal_leaves_foreign_ocpp_servers_alone(hass: HomeAssistant, loaded_entry: MockConfigEntry) -> None:
+async def test_removal_leaves_foreign_ocpp_servers_alone(
+    hass: HomeAssistant, loaded_entry: MockConfigEntry
+) -> None:
     """A charger the user pointed at another OCPP server is not touched."""
-    foreign = {"connectivityMode": "DualProtocol", "websocketConnectionArgs": {"url": "ws://other:9000/ocpp"}}
+    foreign = {
+        "connectivityMode": "DualProtocol",
+        "websocketConnectionArgs": {"url": "ws://other:9000/ocpp"},
+    }
     FakeController.easee.stored[OCPP_SERIAL] = foreign
     subentry_id = next(iter(loaded_entry.subentries))
 

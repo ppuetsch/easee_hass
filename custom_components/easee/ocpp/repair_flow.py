@@ -24,7 +24,9 @@ class ReapplyOcppConnectionFlow(RepairsFlow):
         """Repair the connection of this charger."""
         self._serial = serial
 
-    async def async_step_init(self, user_input: dict[str, Any] | None = None) -> RepairsFlowResult:
+    async def async_step_init(
+        self, user_input: dict[str, Any] | None = None
+    ) -> RepairsFlowResult:
         """Show the address that will be applied."""
         entry, subentry = self._entry_and_subentry()
         if subentry is None:
@@ -37,7 +39,9 @@ class ReapplyOcppConnectionFlow(RepairsFlow):
                 errors[CONF_OCPP_URL] = problem
             else:
                 try:
-                    await self._cloud().enable(self._serial, url, subentry.data[CONF_OCPP_PASSWORD])
+                    await self._cloud().enable(
+                        self._serial, url, subentry.data[CONF_OCPP_PASSWORD]
+                    )
                 except OcppCloudError as error:
                     errors["base"] = error.reason
                 else:
@@ -45,17 +49,24 @@ class ReapplyOcppConnectionFlow(RepairsFlow):
                         entry, subentry, data={**subentry.data, CONF_OCPP_URL: url}
                     )
                     return self.async_create_entry(data={})
-        default_url = subentry.data.get(CONF_OCPP_URL) or await suggested_ocpp_url(self.hass)
+        default_url = subentry.data.get(CONF_OCPP_URL) or await suggested_ocpp_url(
+            self.hass
+        )
         return self.async_show_form(
             step_id="init",
-            data_schema=probatio.Schema({probatio.Required(CONF_OCPP_URL, default=default_url): TextSelector()}),
+            data_schema=probatio.Schema(
+                {probatio.Required(CONF_OCPP_URL, default=default_url): TextSelector()}
+            ),
             description_placeholders={"serial": self._serial},
             errors=errors,
         )
 
     def _entry_and_subentry(self) -> tuple[ConfigEntry, ConfigSubentry | None]:
         entry = self.hass.config_entries.async_entries(DOMAIN)[0]
-        subentry = next((sub for sub in entry.subentries.values() if sub.unique_id == self._serial), None)
+        subentry = next(
+            (sub for sub in entry.subentries.values() if sub.unique_id == self._serial),
+            None,
+        )
         return entry, subentry
 
     def _cloud(self) -> EaseeOcppCloud:

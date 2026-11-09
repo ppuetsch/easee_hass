@@ -18,13 +18,18 @@ TO_REDACT = {CONF_OCPP_PASSWORD, CONF_ALLOWED_ID_TAGS, "id_tag"}
 
 
 def state_diagnostics(state: ChargePointState) -> dict[str, Any]:
-    """The live state as plain data."""
+    """Return the live state as plain data."""
     data = asdict(state)
     data["measurements"] = {
-        f"{measurand}/{phase or '-'}": {"value": sample.value, "timestamp": sample.timestamp.isoformat()}
+        f"{measurand}/{phase or '-'}": {
+            "value": sample.value,
+            "timestamp": sample.timestamp.isoformat(),
+        }
         for (measurand, phase), sample in state.measurements.items()
     }
-    data["unsupported_configuration_keys"] = sorted(state.unsupported_configuration_keys)
+    data["unsupported_configuration_keys"] = sorted(
+        state.unsupported_configuration_keys
+    )
     return data
 
 
@@ -33,7 +38,10 @@ def ocpp_diagnostics(hass: HomeAssistant, entry: ConfigEntry) -> dict[str, Any]:
     hub: OcppHub | None = hass.data.get(HUB_DATA_KEY)
     chargers = (
         {
-            serial: {"connected": hub.is_connected(serial), "state": state_diagnostics(hub.state(serial))}
+            serial: {
+                "connected": hub.is_connected(serial),
+                "state": state_diagnostics(hub.state(serial)),
+            }
             for serial in hub.serials()
         }
         if hub is not None
@@ -44,4 +52,6 @@ def ocpp_diagnostics(hass: HomeAssistant, entry: ConfigEntry) -> dict[str, Any]:
         for subentry in entry.subentries.values()
         if subentry.subentry_type == SUBENTRY_TYPE_OCPP_CHARGER
     ]
-    return async_redact_data({"subentries": subentries, "chargers": chargers}, TO_REDACT)
+    return async_redact_data(
+        {"subentries": subentries, "chargers": chargers}, TO_REDACT
+    )

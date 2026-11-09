@@ -15,7 +15,11 @@ from homeassistant.helpers.entity_platform import AddConfigEntryEntitiesCallback
 
 from .authorization import REMOTE_START_ID_TAG
 from .charge_point import CommandFailedError, EaseeChargePoint
-from .configuration_entities import ConfigurationKeyEntity, async_add_configuration_entities, is_switch_key
+from .configuration_entities import (
+    ConfigurationKeyEntity,
+    async_add_configuration_entities,
+    is_switch_key,
+)
 from .entity import OcppEntity
 from .hub import OcppHub
 from .models import ChargePointState, Serial
@@ -89,7 +93,9 @@ class OcppSwitch(OcppEntity, SwitchEntity):
         """Send the off command."""
         await self._send(self.entity_description.turn_off_fn)
 
-    async def _send(self, command: Callable[[EaseeChargePoint], Awaitable[None]]) -> None:
+    async def _send(
+        self, command: Callable[[EaseeChargePoint], Awaitable[None]]
+    ) -> None:
         try:
             await command(self._hub.charge_point(self._serial))
         except CommandFailedError as error:
@@ -117,12 +123,16 @@ class OcppConfigurationSwitch(ConfigurationKeyEntity, SwitchEntity):
 
 
 def ocpp_switches(hub: OcppHub, serial: Serial) -> list[OcppSwitch]:
-    """Fixed switches of one charger."""
+    """Create the fixed switches of one charger."""
     return [OcppSwitch(hub, serial, description) for description in SWITCH_DESCRIPTIONS]
 
 
 def async_setup_ocpp_configuration_switches(
-    hass: HomeAssistant, entry: ConfigEntry, async_add_entities: AddConfigEntryEntitiesCallback
+    hass: HomeAssistant,
+    entry: ConfigEntry,
+    async_add_entities: AddConfigEntryEntitiesCallback,
 ) -> None:
     """One switch per boolean configuration key."""
-    async_add_configuration_entities(hass, entry, async_add_entities, is_switch_key, OcppConfigurationSwitch)
+    async_add_configuration_entities(
+        hass, entry, async_add_entities, is_switch_key, OcppConfigurationSwitch
+    )

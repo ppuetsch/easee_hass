@@ -43,11 +43,12 @@ def issue_id(kind: str, serial: Serial) -> str:
 
 
 def configured_urls(entry: ConfigEntry) -> dict[Serial, str]:
-    """The address each charger was pointed at (older subentries may not have stored one)."""
+    """Return the address each charger was pointed at (older subentries may lack one)."""
     return {
         subentry.data[CONF_SERIAL]: subentry.data[CONF_OCPP_URL]
         for subentry in entry.subentries.values()
-        if subentry.subentry_type == SUBENTRY_TYPE_OCPP_CHARGER and CONF_OCPP_URL in subentry.data
+        if subentry.subentry_type == SUBENTRY_TYPE_OCPP_CHARGER
+        and CONF_OCPP_URL in subentry.data
     }
 
 
@@ -74,23 +75,39 @@ class OcppHealthMonitor:
         for kind in ALL_ISSUES:
             self._remove_issues_of_removed_chargers(kind)
         await self._check_addresses()
-        self._entry.async_on_unload(async_track_time_interval(self._hass, self._check_connections, CHECK_INTERVAL))
+        self._entry.async_on_unload(
+            async_track_time_interval(
+                self._hass, self._check_connections, CHECK_INTERVAL
+            )
+        )
 
     async def _check_connections(self, now: datetime) -> None:
         for serial in self._hub.serials():
             state = self._hub.state(serial)
-            self._set_issue(ISSUE_DISCONNECTED, serial, state.disconnected_longer_than(DISCONNECTED_ISSUE_AFTER, now))
-            too_many_failures = state.authentication_failures >= AUTHENTICATION_FAILURES_FOR_ISSUE
+            self._set_issue(
+                ISSUE_DISCONNECTED,
+                serial,
+                state.disconnected_longer_than(DISCONNECTED_ISSUE_AFTER, now),
+            )
+            too_many_failures = (
+                state.authentication_failures >= AUTHENTICATION_FAILURES_FOR_ISSUE
+            )
             self._set_issue(ISSUE_AUTHENTICATION_FAILED, serial, too_many_failures)
 
     async def _check_addresses(self) -> None:
-        own_addresses = {str(address) for address in await async_get_enabled_source_ips(self._hass)}
+        own_addresses = {
+            str(address) for address in await async_get_enabled_source_ips(self._hass)
+        }
         for serial, url in configured_urls(self._entry).items():
             host = urlsplit(url).hostname or ""
-            points_elsewhere = not (await async_host_addresses(self._hass, host) & own_addresses)
+            points_elsewhere = not (
+                await async_host_addresses(self._hass, host) & own_addresses
+            )
             self._set_issue(ISSUE_ADDRESS_CHANGED, serial, points_elsewhere, url=url)
 
-    def _set_issue(self, kind: str, serial: Serial, present: bool, url: str = "") -> None:
+    def _set_issue(
+        self, kind: str, serial: Serial, present: bool, url: str = ""
+    ) -> None:
         if not present:
             ir.async_delete_issue(self._hass, DOMAIN, issue_id(kind, serial))
             return
@@ -110,7 +127,11 @@ class OcppHealthMonitor:
         registry = ir.async_get(self._hass)
         for domain, existing_id in list(registry.issues):
             serial = existing_id.removeprefix(f"{kind}_")
-            if domain == DOMAIN and existing_id.startswith(f"{kind}_") and serial not in configured:
+            if (
+                domain == DOMAIN
+                and existing_id.startswith(f"{kind}_")
+                and serial not in configured
+            ):
                 ir.async_delete_issue(self._hass, DOMAIN, existing_id)
 
 

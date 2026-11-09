@@ -9,7 +9,9 @@ from .ocpp.text import async_setup_ocpp_texts
 
 
 async def async_setup_entry(
-    hass: HomeAssistant, entry: ConfigEntry, async_add_entities: AddConfigEntryEntitiesCallback
+    hass: HomeAssistant,
+    entry: ConfigEntry,
+    async_add_entities: AddConfigEntryEntitiesCallback,
 ) -> None:
     """Set up text platform."""
     controller = hass.data[DOMAIN]["controller"]

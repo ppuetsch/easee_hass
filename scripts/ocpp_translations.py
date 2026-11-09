@@ -17,14 +17,26 @@ type Texts = dict[str, Any]
 INTEGRATION_DIR = Path(__file__).resolve().parent.parent / "custom_components" / "easee"
 
 STATUS_STATES_EN = {
-    "available": "Available", "preparing": "Preparing", "charging": "Charging",
-    "suspendedevse": "Suspended by charger", "suspendedev": "Suspended by vehicle",
-    "finishing": "Finishing", "reserved": "Reserved", "unavailable": "Unavailable", "faulted": "Faulted",
+    "available": "Available",
+    "preparing": "Preparing",
+    "charging": "Charging",
+    "suspendedevse": "Suspended by charger",
+    "suspendedev": "Suspended by vehicle",
+    "finishing": "Finishing",
+    "reserved": "Reserved",
+    "unavailable": "Unavailable",
+    "faulted": "Faulted",
 }
 STATUS_STATES_DE = {
-    "available": "Verfügbar", "preparing": "Vorbereitung", "charging": "Lädt",
-    "suspendedevse": "Pausiert durch Charger", "suspendedev": "Pausiert durch Fahrzeug",
-    "finishing": "Beendet", "reserved": "Reserviert", "unavailable": "Nicht verfügbar", "faulted": "Fehler",
+    "available": "Verfügbar",
+    "preparing": "Vorbereitung",
+    "charging": "Lädt",
+    "suspendedevse": "Pausiert durch Charger",
+    "suspendedev": "Pausiert durch Fahrzeug",
+    "finishing": "Beendet",
+    "reserved": "Reserviert",
+    "unavailable": "Nicht verfügbar",
+    "faulted": "Fehler",
 }
 
 
@@ -38,54 +50,89 @@ def entity_names(names: dict[str, dict[str, str]]) -> dict[str, dict[str, Any]]:
 
 ENTITY_NAMES_EN = {
     "sensor": {
-        "status": "OCPP status", "power": "OCPP power", "energy": "OCPP energy meter",
-        "session_energy": "OCPP session energy", "session_start": "OCPP session start",
-        "current_offered": "OCPP current offered", "charging_limit": "OCPP charging limit",
+        "status": "OCPP status",
+        "power": "OCPP power",
+        "energy": "OCPP energy meter",
+        "session_energy": "OCPP session energy",
+        "session_start": "OCPP session start",
+        "current_offered": "OCPP current offered",
+        "charging_limit": "OCPP charging limit",
         "temperature": "OCPP temperature",
-        "current_l1": "OCPP current L1", "current_l2": "OCPP current L2", "current_l3": "OCPP current L3",
-        "voltage_l1": "OCPP voltage L1", "voltage_l2": "OCPP voltage L2", "voltage_l3": "OCPP voltage L3",
-        "last_rfid_card": "OCPP last RFID card", "error_code": "OCPP error code",
-        "vendor_error_code": "OCPP vendor error code", "transaction_id": "OCPP transaction id",
-        "last_message": "OCPP last message", "meter_value_interval": "OCPP meter value interval",
+        "current_l1": "OCPP current L1",
+        "current_l2": "OCPP current L2",
+        "current_l3": "OCPP current L3",
+        "voltage_l1": "OCPP voltage L1",
+        "voltage_l2": "OCPP voltage L2",
+        "voltage_l3": "OCPP voltage L3",
+        "last_rfid_card": "OCPP last RFID card",
+        "error_code": "OCPP error code",
+        "vendor_error_code": "OCPP vendor error code",
+        "transaction_id": "OCPP transaction id",
+        "last_message": "OCPP last message",
+        "meter_value_interval": "OCPP meter value interval",
         "firmware": "OCPP firmware",
     },
     "binary_sensor": {
-        "connected": "OCPP connected", "transaction": "OCPP session active", "charging": "OCPP charging",
+        "connected": "OCPP connected",
+        "transaction": "OCPP session active",
+        "charging": "OCPP charging",
     },
     "number": {"max_current": "OCPP max current"},
     "switch": {"available": "OCPP available", "charge": "OCPP charge"},
     "button": {
-        "soft_reset": "OCPP restart", "hard_reset": "OCPP reboot", "unlock": "OCPP unlock cable",
-        "refresh": "OCPP refresh", "learn_rfid": "OCPP learn next RFID card",
+        "soft_reset": "OCPP restart",
+        "hard_reset": "OCPP reboot",
+        "unlock": "OCPP unlock cable",
+        "refresh": "OCPP refresh",
+        "learn_rfid": "OCPP learn next RFID card",
     },
 }
 ENTITY_NAMES_DE = {
     "sensor": {
-        "status": "OCPP-Status", "power": "OCPP-Leistung", "energy": "OCPP-Zählerstand",
-        "session_energy": "OCPP-Energie Ladevorgang", "session_start": "OCPP-Beginn Ladevorgang",
-        "current_offered": "OCPP-angebotener Strom", "charging_limit": "OCPP-Ladelimit",
+        "status": "OCPP-Status",
+        "power": "OCPP-Leistung",
+        "energy": "OCPP-Zählerstand",
+        "session_energy": "OCPP-Energie Ladevorgang",
+        "session_start": "OCPP-Beginn Ladevorgang",
+        "current_offered": "OCPP-angebotener Strom",
+        "charging_limit": "OCPP-Ladelimit",
         "temperature": "OCPP-Temperatur",
-        "current_l1": "OCPP-Strom L1", "current_l2": "OCPP-Strom L2", "current_l3": "OCPP-Strom L3",
-        "voltage_l1": "OCPP-Spannung L1", "voltage_l2": "OCPP-Spannung L2", "voltage_l3": "OCPP-Spannung L3",
-        "last_rfid_card": "OCPP-letzte RFID-Karte", "error_code": "OCPP-Fehlercode",
-        "vendor_error_code": "OCPP-Herstellerfehlercode", "transaction_id": "OCPP-Transaktions-ID",
-        "last_message": "OCPP-letzte Nachricht", "meter_value_interval": "OCPP-Messintervall",
+        "current_l1": "OCPP-Strom L1",
+        "current_l2": "OCPP-Strom L2",
+        "current_l3": "OCPP-Strom L3",
+        "voltage_l1": "OCPP-Spannung L1",
+        "voltage_l2": "OCPP-Spannung L2",
+        "voltage_l3": "OCPP-Spannung L3",
+        "last_rfid_card": "OCPP-letzte RFID-Karte",
+        "error_code": "OCPP-Fehlercode",
+        "vendor_error_code": "OCPP-Herstellerfehlercode",
+        "transaction_id": "OCPP-Transaktions-ID",
+        "last_message": "OCPP-letzte Nachricht",
+        "meter_value_interval": "OCPP-Messintervall",
         "firmware": "OCPP-Firmware",
     },
     "binary_sensor": {
-        "connected": "OCPP verbunden", "transaction": "OCPP-Ladevorgang aktiv", "charging": "OCPP lädt",
+        "connected": "OCPP verbunden",
+        "transaction": "OCPP-Ladevorgang aktiv",
+        "charging": "OCPP lädt",
     },
     "number": {"max_current": "OCPP-Maximalstrom"},
     "switch": {"available": "OCPP verfügbar", "charge": "OCPP laden"},
     "button": {
-        "soft_reset": "OCPP-Neustart", "hard_reset": "OCPP-Hardware-Neustart", "unlock": "OCPP Kabel entriegeln",
-        "refresh": "OCPP aktualisieren", "learn_rfid": "OCPP nächste RFID-Karte anlernen",
+        "soft_reset": "OCPP-Neustart",
+        "hard_reset": "OCPP-Hardware-Neustart",
+        "unlock": "OCPP Kabel entriegeln",
+        "refresh": "OCPP aktualisieren",
+        "learn_rfid": "OCPP nächste RFID-Karte anlernen",
     },
 }
 
 SUBENTRY_EN: Texts = {
     "entry_type": "OCPP charger",
-    "initiate_flow": {"user": "Connect charger via local OCPP", "reconfigure": "Change OCPP address"},
+    "initiate_flow": {
+        "user": "Connect charger via local OCPP",
+        "reconfigure": "Change OCPP address",
+    },
     "step": {
         "user": {
             "title": "Connect charger via local OCPP",
@@ -106,7 +153,9 @@ SUBENTRY_EN: Texts = {
                 "accepted the RFID card. Make sure your cards are listed in the integration options "
                 "(Configure → RFID cards)."
             ),
-            "data": {"reset_circuit_limit": "Lift the dynamic circuit limit to the fuse rating"},
+            "data": {
+                "reset_circuit_limit": "Lift the dynamic circuit limit to the fuse rating"
+            },
             "data_description": {
                 "reset_circuit_limit": "Otherwise the circuit limit from the cloud keeps capping the OCPP limits."
             },
@@ -168,7 +217,10 @@ SUBENTRY_EN: Texts = {
 }
 SUBENTRY_DE: Texts = {
     "entry_type": "OCPP-Charger",
-    "initiate_flow": {"user": "Charger per lokalem OCPP verbinden", "reconfigure": "OCPP-Adresse ändern"},
+    "initiate_flow": {
+        "user": "Charger per lokalem OCPP verbinden",
+        "reconfigure": "OCPP-Adresse ändern",
+    },
     "step": {
         "user": {
             "title": "Charger per lokalem OCPP verbinden",
@@ -189,7 +241,9 @@ SUBENTRY_DE: Texts = {
                 "freigegeben hat. Trage deine Karten in den Optionen der Integration ein "
                 "(Konfigurieren → RFID-Karten)."
             ),
-            "data": {"reset_circuit_limit": "Dynamisches Stromkreislimit auf die Absicherung anheben"},
+            "data": {
+                "reset_circuit_limit": "Dynamisches Stromkreislimit auf die Absicherung anheben"
+            },
             "data_description": {
                 "reset_circuit_limit": "Sonst begrenzt das Stromkreislimit aus der Cloud weiterhin die OCPP-Limits."
             },
@@ -251,16 +305,25 @@ SUBENTRY_DE: Texts = {
 }
 
 
-DEVICE_FIELD_EN = {"name": "Charger", "description": "Charger connected via local OCPP."}
-DEVICE_FIELD_DE = {"name": "Charger", "description": "Per lokalem OCPP verbundener Charger."}
+DEVICE_FIELD_EN = {
+    "name": "Charger",
+    "description": "Charger connected via local OCPP.",
+}
+DEVICE_FIELD_DE = {
+    "name": "Charger",
+    "description": "Per lokalem OCPP verbundener Charger.",
+}
 
 
-def service(name: str, description: str, device_field: dict[str, str], **fields: tuple[str, str]) -> Texts:
+def service(
+    name: str, description: str, device_field: dict[str, str], **fields: tuple[str, str]
+) -> Texts:
     """Texts of one action; fields are (name, description) pairs."""
     return {
         "name": name,
         "description": description,
-        "fields": {"device_id": device_field} | {
+        "fields": {"device_id": device_field}
+        | {
             key: {"name": field_name, "description": field_description}
             for key, (field_name, field_description) in fields.items()
         },
@@ -271,79 +334,141 @@ SERVICES_EN: Texts = {
     "ocpp_get_configuration": service(
         "OCPP: read configuration",
         "Reads all configuration keys, or one key (also hidden Easee keys like FreeCharging).",
-        DEVICE_FIELD_EN, key=("Key", "Only this key; empty for all visible keys.")),
+        DEVICE_FIELD_EN,
+        key=("Key", "Only this key; empty for all visible keys."),
+    ),
     "ocpp_change_configuration": service(
-        "OCPP: change configuration", "Writes one configuration key (ChangeConfiguration).",
-        DEVICE_FIELD_EN, key=("Key", "Configuration key."), value=("Value", "New value as text.")),
+        "OCPP: change configuration",
+        "Writes one configuration key (ChangeConfiguration).",
+        DEVICE_FIELD_EN,
+        key=("Key", "Configuration key."),
+        value=("Value", "New value as text."),
+    ),
     "ocpp_set_charging_profile": service(
-        "OCPP: set charging profile", "Installs a charging profile (SetChargingProfile, amperes only on Easee).",
-        DEVICE_FIELD_EN, connector_id=("Connector", "0 = whole charger, 1 = vehicle connector."),
-        charging_profile=("Charging profile", "OCPP 1.6 ChargingProfile object.")),
+        "OCPP: set charging profile",
+        "Installs a charging profile (SetChargingProfile, amperes only on Easee).",
+        DEVICE_FIELD_EN,
+        connector_id=("Connector", "0 = whole charger, 1 = vehicle connector."),
+        charging_profile=("Charging profile", "OCPP 1.6 ChargingProfile object."),
+    ),
     "ocpp_clear_charging_profile": service(
-        "OCPP: clear charging profiles", "Removes charging profiles; without criteria all of them.",
-        DEVICE_FIELD_EN, profile_id=("Profile id", "Only this profile."),
+        "OCPP: clear charging profiles",
+        "Removes charging profiles; without criteria all of them.",
+        DEVICE_FIELD_EN,
+        profile_id=("Profile id", "Only this profile."),
         connector_id=("Connector", "Only this connector."),
-        purpose=("Purpose", "Only profiles with this purpose."), stack_level=("Stack level", "Only this stack level.")),
+        purpose=("Purpose", "Only profiles with this purpose."),
+        stack_level=("Stack level", "Only this stack level."),
+    ),
     "ocpp_get_composite_schedule": service(
-        "OCPP: read effective schedule", "Returns the limits in force (GetCompositeSchedule).",
-        DEVICE_FIELD_EN, connector_id=("Connector", "0 = whole charger, 1 = vehicle connector."),
-        duration=("Duration", "Period to report, in seconds.")),
+        "OCPP: read effective schedule",
+        "Returns the limits in force (GetCompositeSchedule).",
+        DEVICE_FIELD_EN,
+        connector_id=("Connector", "0 = whole charger, 1 = vehicle connector."),
+        duration=("Duration", "Period to report, in seconds."),
+    ),
     "ocpp_trigger_message": service(
-        "OCPP: request message", "Asks the charger to send a message now (TriggerMessage).",
-        DEVICE_FIELD_EN, message=("Message", "Message to send."), connector_id=("Connector", "Optional connector.")),
+        "OCPP: request message",
+        "Asks the charger to send a message now (TriggerMessage).",
+        DEVICE_FIELD_EN,
+        message=("Message", "Message to send."),
+        connector_id=("Connector", "Optional connector."),
+    ),
     "ocpp_send_local_list": service(
         "OCPP: send local authorization list",
         "Cards the charger accepts by itself while it cannot reach Home Assistant (Easee: max. 10).",
-        DEVICE_FIELD_EN, id_tags=("RFID cards", "Card ids."),
+        DEVICE_FIELD_EN,
+        id_tags=("RFID cards", "Card ids."),
         version=("Version", "List version, increase with every change."),
-        full_update=("Replace list", "Replace the list instead of adding to it.")),
+        full_update=("Replace list", "Replace the list instead of adding to it."),
+    ),
     "ocpp_get_local_list_version": service(
-        "OCPP: read local list version", "Returns the version of the local authorization list.", DEVICE_FIELD_EN),
+        "OCPP: read local list version",
+        "Returns the version of the local authorization list.",
+        DEVICE_FIELD_EN,
+    ),
 }
 SERVICES_DE: Texts = {
     "ocpp_get_configuration": service(
         "OCPP: Konfiguration lesen",
         "Liest alle Konfigurationsschlüssel oder einen (auch versteckte Easee-Schlüssel wie FreeCharging).",
-        DEVICE_FIELD_DE, key=("Schlüssel", "Nur diesen Schlüssel; leer für alle sichtbaren.")),
+        DEVICE_FIELD_DE,
+        key=("Schlüssel", "Nur diesen Schlüssel; leer für alle sichtbaren."),
+    ),
     "ocpp_change_configuration": service(
-        "OCPP: Konfiguration ändern", "Schreibt einen Konfigurationsschlüssel (ChangeConfiguration).",
-        DEVICE_FIELD_DE, key=("Schlüssel", "Konfigurationsschlüssel."), value=("Wert", "Neuer Wert als Text.")),
+        "OCPP: Konfiguration ändern",
+        "Schreibt einen Konfigurationsschlüssel (ChangeConfiguration).",
+        DEVICE_FIELD_DE,
+        key=("Schlüssel", "Konfigurationsschlüssel."),
+        value=("Wert", "Neuer Wert als Text."),
+    ),
     "ocpp_set_charging_profile": service(
-        "OCPP: Ladeprofil setzen", "Installiert ein Ladeprofil (SetChargingProfile, bei Easee nur Ampere).",
-        DEVICE_FIELD_DE, connector_id=("Anschluss", "0 = ganzer Charger, 1 = Fahrzeuganschluss."),
-        charging_profile=("Ladeprofil", "OCPP-1.6-ChargingProfile-Objekt.")),
+        "OCPP: Ladeprofil setzen",
+        "Installiert ein Ladeprofil (SetChargingProfile, bei Easee nur Ampere).",
+        DEVICE_FIELD_DE,
+        connector_id=("Anschluss", "0 = ganzer Charger, 1 = Fahrzeuganschluss."),
+        charging_profile=("Ladeprofil", "OCPP-1.6-ChargingProfile-Objekt."),
+    ),
     "ocpp_clear_charging_profile": service(
-        "OCPP: Ladeprofile löschen", "Entfernt Ladeprofile; ohne Kriterien alle.",
-        DEVICE_FIELD_DE, profile_id=("Profil-ID", "Nur dieses Profil."),
+        "OCPP: Ladeprofile löschen",
+        "Entfernt Ladeprofile; ohne Kriterien alle.",
+        DEVICE_FIELD_DE,
+        profile_id=("Profil-ID", "Nur dieses Profil."),
         connector_id=("Anschluss", "Nur dieser Anschluss."),
-        purpose=("Zweck", "Nur Profile mit diesem Zweck."), stack_level=("Stack-Ebene", "Nur diese Ebene.")),
+        purpose=("Zweck", "Nur Profile mit diesem Zweck."),
+        stack_level=("Stack-Ebene", "Nur diese Ebene."),
+    ),
     "ocpp_get_composite_schedule": service(
-        "OCPP: wirksamen Zeitplan lesen", "Liefert die geltenden Limits (GetCompositeSchedule).",
-        DEVICE_FIELD_DE, connector_id=("Anschluss", "0 = ganzer Charger, 1 = Fahrzeuganschluss."),
-        duration=("Dauer", "Zeitraum in Sekunden.")),
+        "OCPP: wirksamen Zeitplan lesen",
+        "Liefert die geltenden Limits (GetCompositeSchedule).",
+        DEVICE_FIELD_DE,
+        connector_id=("Anschluss", "0 = ganzer Charger, 1 = Fahrzeuganschluss."),
+        duration=("Dauer", "Zeitraum in Sekunden."),
+    ),
     "ocpp_trigger_message": service(
-        "OCPP: Nachricht anfordern", "Fordert den Charger auf, sofort eine Nachricht zu senden (TriggerMessage).",
-        DEVICE_FIELD_DE, message=("Nachricht", "Zu sendende Nachricht."),
-        connector_id=("Anschluss", "Optionaler Anschluss.")),
+        "OCPP: Nachricht anfordern",
+        "Fordert den Charger auf, sofort eine Nachricht zu senden (TriggerMessage).",
+        DEVICE_FIELD_DE,
+        message=("Nachricht", "Zu sendende Nachricht."),
+        connector_id=("Anschluss", "Optionaler Anschluss."),
+    ),
     "ocpp_send_local_list": service(
         "OCPP: lokale Freigabeliste senden",
         "Karten, die der Charger selbst akzeptiert, solange er Home Assistant nicht erreicht (Easee: max. 10).",
-        DEVICE_FIELD_DE, id_tags=("RFID-Karten", "Karten-IDs."),
+        DEVICE_FIELD_DE,
+        id_tags=("RFID-Karten", "Karten-IDs."),
         version=("Version", "Listenversion, bei jeder Änderung erhöhen."),
-        full_update=("Liste ersetzen", "Liste ersetzen statt ergänzen.")),
+        full_update=("Liste ersetzen", "Liste ersetzen statt ergänzen."),
+    ),
     "ocpp_get_local_list_version": service(
-        "OCPP: Version der lokalen Liste lesen", "Liefert die Version der lokalen Freigabeliste.", DEVICE_FIELD_DE),
+        "OCPP: Version der lokalen Liste lesen",
+        "Liefert die Version der lokalen Freigabeliste.",
+        DEVICE_FIELD_DE,
+    ),
 }
 
 
-def repair_issue(title: str, description: str, fix_title: str, fix_description: str, url_label: str,
-                 errors: dict[str, str], aborts: dict[str, str]) -> Texts:
+def repair_issue(
+    title: str,
+    description: str,
+    fix_title: str,
+    fix_description: str,
+    url_label: str,
+    errors: dict[str, str],
+    aborts: dict[str, str],
+) -> Texts:
     """Texts of one repair issue with the re-apply fix flow."""
     return {
         "title": title,
         "description": description,
         "fix_flow": {
-            "step": {"init": {"title": fix_title, "description": fix_description, "data": {"ocpp_url": url_label}}},
+            "step": {
+                "init": {
+                    "title": fix_title,
+                    "description": fix_description,
+                    "data": {"ocpp_url": url_label},
+                }
+            },
             "error": errors,
             "abort": aborts,
         },
@@ -362,58 +487,97 @@ FIX_DE = (
     "Meist dauert es ein paar Minuten, bis er sich verbindet.",
     "OCPP-Adresse",
 )
-ISSUE_ABORTS_EN = {"charger_not_configured": "The charger is no longer connected via OCPP."}
-ISSUE_ABORTS_DE = {"charger_not_configured": "Der Charger ist nicht mehr per OCPP eingerichtet."}
+ISSUE_ABORTS_EN = {
+    "charger_not_configured": "The charger is no longer connected via OCPP."
+}
+ISSUE_ABORTS_DE = {
+    "charger_not_configured": "Der Charger ist nicht mehr per OCPP eingerichtet."
+}
 
 
-def issues(fix: tuple[str, str, str], errors: dict[str, str], aborts: dict[str, str],
-           disconnected: tuple[str, str], authentication: tuple[str, str], address: tuple[str, str]) -> Texts:
+def issues(
+    fix: tuple[str, str, str],
+    errors: dict[str, str],
+    aborts: dict[str, str],
+    disconnected: tuple[str, str],
+    authentication: tuple[str, str],
+    address: tuple[str, str],
+) -> Texts:
     """All OCPP repair issues of one language."""
     return {
         "ocpp_disconnected": repair_issue(*disconnected, *fix, errors, aborts),
-        "ocpp_authentication_failed": repair_issue(*authentication, *fix, errors, aborts),
+        "ocpp_authentication_failed": repair_issue(
+            *authentication, *fix, errors, aborts
+        ),
         "ocpp_address_changed": repair_issue(*address, *fix, errors, aborts),
     }
 
 
 ISSUES_EN: Texts = issues(
-    FIX_EN, SUBENTRY_EN["error"], ISSUE_ABORTS_EN,
-    ("Easee charger {serial} is not connected via OCPP",
-     "The charger has not been connected to Home Assistant for more than 15 minutes. While OCPP is active it "
-     "cannot start charging without Home Assistant. Check that it is online and can reach Home Assistant, "
-     "or apply the connection again."),
-    ("Easee charger {serial} uses a wrong OCPP password",
-     "The charger tried to connect several times with a password that does not match. Apply the connection "
-     "again to send it the stored password."),
-    ("OCPP address of Easee charger {serial} no longer points to Home Assistant",
-     "The charger connects to {url}, which does not resolve to this Home Assistant any more (e.g. after an IP "
-     "change). Apply a current address."),
+    FIX_EN,
+    SUBENTRY_EN["error"],
+    ISSUE_ABORTS_EN,
+    (
+        "Easee charger {serial} is not connected via OCPP",
+        "The charger has not been connected to Home Assistant for more than 15 minutes. While OCPP is active it "
+        "cannot start charging without Home Assistant. Check that it is online and can reach Home Assistant, "
+        "or apply the connection again.",
+    ),
+    (
+        "Easee charger {serial} uses a wrong OCPP password",
+        "The charger tried to connect several times with a password that does not match. Apply the connection "
+        "again to send it the stored password.",
+    ),
+    (
+        "OCPP address of Easee charger {serial} no longer points to Home Assistant",
+        "The charger connects to {url}, which does not resolve to this Home Assistant any more (e.g. after an IP "
+        "change). Apply a current address.",
+    ),
 )
 ISSUES_DE: Texts = issues(
-    FIX_DE, SUBENTRY_DE["error"], ISSUE_ABORTS_DE,
-    ("Easee-Charger {serial} ist nicht per OCPP verbunden",
-     "Der Charger ist seit mehr als 15 Minuten nicht mit Home Assistant verbunden. Solange OCPP aktiv ist, kann "
-     "er ohne Home Assistant keinen Ladevorgang starten. Prüfe, ob er online ist und Home Assistant erreicht, "
-     "oder wende die Verbindung erneut an."),
-    ("Easee-Charger {serial} nutzt ein falsches OCPP-Passwort",
-     "Der Charger hat sich mehrfach mit einem nicht passenden Passwort angemeldet. Wende die Verbindung erneut "
-     "an, um ihm das gespeicherte Passwort zu schicken."),
-    ("OCPP-Adresse von Easee-Charger {serial} zeigt nicht mehr auf Home Assistant",
-     "Der Charger verbindet sich mit {url}; die Adresse führt nicht mehr zu diesem Home Assistant (z. B. nach "
-     "einem IP-Wechsel). Wende eine aktuelle Adresse an."),
+    FIX_DE,
+    SUBENTRY_DE["error"],
+    ISSUE_ABORTS_DE,
+    (
+        "Easee-Charger {serial} ist nicht per OCPP verbunden",
+        "Der Charger ist seit mehr als 15 Minuten nicht mit Home Assistant verbunden. Solange OCPP aktiv ist, kann "
+        "er ohne Home Assistant keinen Ladevorgang starten. Prüfe, ob er online ist und Home Assistant erreicht, "
+        "oder wende die Verbindung erneut an.",
+    ),
+    (
+        "Easee-Charger {serial} nutzt ein falsches OCPP-Passwort",
+        "Der Charger hat sich mehrfach mit einem nicht passenden Passwort angemeldet. Wende die Verbindung erneut "
+        "an, um ihm das gespeicherte Passwort zu schicken.",
+    ),
+    (
+        "OCPP-Adresse von Easee-Charger {serial} zeigt nicht mehr auf Home Assistant",
+        "Der Charger verbindet sich mit {url}; die Adresse führt nicht mehr zu diesem Home Assistant (z. B. nach "
+        "einem IP-Wechsel). Wende eine aktuelle Adresse an.",
+    ),
 )
 
 OPTIONS_EN = {"allowed_id_tags": "RFID cards allowed to charge (OCPP)"}
 OPTIONS_DE = {"allowed_id_tags": "RFID-Karten mit Ladefreigabe (OCPP)"}
 
 
-def language_texts(entity_names_by_platform: dict[str, dict[str, str]], status_states: dict[str, str],
-                   subentry: Texts, options: dict[str, str], services: Texts, issue_texts: Texts) -> Texts:
+def language_texts(
+    entity_names_by_platform: dict[str, dict[str, str]],
+    status_states: dict[str, str],
+    subentry: Texts,
+    options: dict[str, str],
+    services: Texts,
+    issue_texts: Texts,
+) -> Texts:
     """Bundle all OCPP texts of one language."""
     entities = entity_names(entity_names_by_platform)
     entities["sensor"]["ocpp_status"]["state"] = status_states
-    return {"entity": entities, "subentry": subentry, "options": options, "services": services,
-            "issues": issue_texts}
+    return {
+        "entity": entities,
+        "subentry": subentry,
+        "options": options,
+        "services": services,
+        "issues": issue_texts,
+    }
 
 
 def deep_merge(target: Texts, addition: Texts) -> None:
@@ -430,17 +594,38 @@ def merge_into(path: Path, texts: Texts) -> None:
     document = json.loads(path.read_text(encoding="utf-8"))
     deep_merge(document.setdefault("entity", {}), texts["entity"])
     document.setdefault("config_subentries", {})["ocpp_charger"] = texts["subentry"]
-    options_data = document.setdefault("options", {}).setdefault("step", {}).setdefault("init", {}).setdefault("data", {})
+    options_data = (
+        document.setdefault("options", {})
+        .setdefault("step", {})
+        .setdefault("init", {})
+        .setdefault("data", {})
+    )
     options_data.update(texts["options"])
     document.setdefault("services", {}).update(texts["services"])
     document.setdefault("issues", {}).update(texts["issues"])
-    path.write_text(json.dumps(document, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
+    path.write_text(
+        json.dumps(document, indent=2, ensure_ascii=False) + "\n", encoding="utf-8"
+    )
 
 
 def main() -> None:
     """Update all three files."""
-    english = language_texts(ENTITY_NAMES_EN, STATUS_STATES_EN, SUBENTRY_EN, OPTIONS_EN, SERVICES_EN, ISSUES_EN)
-    german = language_texts(ENTITY_NAMES_DE, STATUS_STATES_DE, SUBENTRY_DE, OPTIONS_DE, SERVICES_DE, ISSUES_DE)
+    english = language_texts(
+        ENTITY_NAMES_EN,
+        STATUS_STATES_EN,
+        SUBENTRY_EN,
+        OPTIONS_EN,
+        SERVICES_EN,
+        ISSUES_EN,
+    )
+    german = language_texts(
+        ENTITY_NAMES_DE,
+        STATUS_STATES_DE,
+        SUBENTRY_DE,
+        OPTIONS_DE,
+        SERVICES_DE,
+        ISSUES_DE,
+    )
     merge_into(INTEGRATION_DIR / "strings.json", english)
     merge_into(INTEGRATION_DIR / "translations" / "en.json", english)
     merge_into(INTEGRATION_DIR / "translations" / "de.json", german)

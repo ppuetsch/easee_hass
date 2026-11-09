@@ -61,7 +61,9 @@ class ConfigurationKeyEntity(OcppEntity):
         is_read_only = hub.state(serial).configuration[key].readonly
         description = self.description_class(
             key=f"config_{key}",
-            entity_category=EntityCategory.DIAGNOSTIC if is_read_only else EntityCategory.CONFIG,
+            entity_category=EntityCategory.DIAGNOSTIC
+            if is_read_only
+            else EntityCategory.CONFIG,
             entity_registry_enabled_default=not is_read_only,
         )
         super().__init__(hub, serial, description)
@@ -76,11 +78,15 @@ class ConfigurationKeyEntity(OcppEntity):
 
     async def _write(self, value: str) -> None:
         try:
-            status = await self._hub.charge_point(self._serial).change_configuration(self._configuration_key, value)
+            status = await self._hub.charge_point(self._serial).change_configuration(
+                self._configuration_key, value
+            )
         except CommandFailedError as error:
             raise HomeAssistantError(str(error)) from error
         if status == "RebootRequired":
-            raise HomeAssistantError(f"{self._configuration_key} takes effect after a reboot of the charger")
+            raise HomeAssistantError(
+                f"{self._configuration_key} takes effect after a reboot of the charger"
+            )
 
 
 @callback
@@ -99,12 +105,22 @@ def async_add_configuration_entities(
         added_keys: set[ConfigurationKey] = set()
 
         @callback
-        def add_new_keys(serial: Serial = serial, added_keys: set[ConfigurationKey] = added_keys) -> None:
+        def add_new_keys(
+            serial: Serial = serial, added_keys: set[ConfigurationKey] = added_keys
+        ) -> None:
             configuration = hub.state(serial).configuration
-            new_keys = [key for key, value in configuration.items() if key not in added_keys and belongs_to_platform(value)]
+            new_keys = [
+                key
+                for key, value in configuration.items()
+                if key not in added_keys and belongs_to_platform(value)
+            ]
             added_keys.update(new_keys)
             if new_keys:
-                async_add_entities([create_entity(hub, serial, key) for key in new_keys])
+                async_add_entities(
+                    [create_entity(hub, serial, key) for key in new_keys]
+                )
 
         add_new_keys()
-        entry.async_on_unload(async_dispatcher_connect(hass, signal_state_updated(serial), add_new_keys))
+        entry.async_on_unload(
+            async_dispatcher_connect(hass, signal_state_updated(serial), add_new_keys)
+        )

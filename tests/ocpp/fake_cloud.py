@@ -93,12 +93,22 @@ class FakeEaseeApi:
 
 
 def ready_product_data(charger: FakeCloudCharger) -> FakeProductData:
-    """A charger that fulfils every precondition."""
+    """Create cloud data of a charger that fulfils every precondition."""
     return FakeProductData(
         product=charger,
-        state={"chargerFirmware": FIRMWARE_WITH_OCPP, "wiFiRSSI": -60, "operatorName": "Easee",
-               "dynamicCircuitCurrentP1": 32, "dynamicCircuitCurrentP2": 32, "dynamicCircuitCurrentP3": 32},
-        config={"circuitMaxCurrentP1": 32, "circuitMaxCurrentP2": 32, "circuitMaxCurrentP3": 32},
+        state={
+            "chargerFirmware": FIRMWARE_WITH_OCPP,
+            "wiFiRSSI": -60,
+            "operatorName": "Easee",
+            "dynamicCircuitCurrentP1": 32,
+            "dynamicCircuitCurrentP2": 32,
+            "dynamicCircuitCurrentP3": 32,
+        },
+        config={
+            "circuitMaxCurrentP1": 32,
+            "circuitMaxCurrentP2": 32,
+            "circuitMaxCurrentP3": 32,
+        },
         circuit=FakeCircuit(),
     )
 
@@ -110,7 +120,13 @@ class FakeController:
     chargers_data: list[FakeProductData] = []
     easee: FakeEaseeApi = FakeEaseeApi()
 
-    def __init__(self, username: str, password: str, hass: HomeAssistant, config_entry: ConfigEntry) -> None:
+    def __init__(
+        self,
+        username: str,
+        password: str,
+        hass: HomeAssistant,
+        config_entry: ConfigEntry,
+    ) -> None:
         """Mirror the real constructor."""
         self.hass = hass
         self.entry = config_entry

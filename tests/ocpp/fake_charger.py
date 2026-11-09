@@ -4,8 +4,8 @@ from __future__ import annotations
 
 import asyncio
 import base64
-import json
 from dataclasses import dataclass, field
+import json
 from typing import Any
 
 from aiohttp import ClientWebSocketResponse, WSMsgType
@@ -49,7 +49,9 @@ class FakeChargerMemory:
             "MeterValuesSampledData": "Energy.Active.Import.Register",
         }
     )
-    read_only_configuration: dict[str, str] = field(default_factory=lambda: {"NumberOfConnectors": "1"})
+    read_only_configuration: dict[str, str] = field(
+        default_factory=lambda: {"NumberOfConnectors": "1"}
+    )
     charging_profiles: list[dict[str, Any]] = field(default_factory=list)
     triggered: list[str] = field(default_factory=list)
     commands: list[tuple[str, dict[str, Any]]] = field(default_factory=list)
@@ -64,24 +66,38 @@ class FakeEaseeCharger(ChargePoint):
         self.memory = FakeChargerMemory()
 
     @on(Action.change_configuration)
-    def on_change_configuration(self, key: str, value: str, **kwargs: Any) -> call_result.ChangeConfiguration:
+    def on_change_configuration(
+        self, key: str, value: str, **kwargs: Any
+    ) -> call_result.ChangeConfiguration:
         """Reject short sample intervals like a real Easee."""
-        too_short = key == "MeterValueSampleInterval" and int(value) < SMALLEST_ACCEPTED_SAMPLE_INTERVAL
+        too_short = (
+            key == "MeterValueSampleInterval"
+            and int(value) < SMALLEST_ACCEPTED_SAMPLE_INTERVAL
+        )
         if too_short:
             return call_result.ChangeConfiguration(status="Rejected")
         self.memory.configuration[key] = value
         return call_result.ChangeConfiguration(status="Accepted")
 
     @on(Action.get_configuration)
-    def on_get_configuration(self, key: list[str] | None = None, **kwargs: Any) -> call_result.GetConfiguration:
+    def on_get_configuration(
+        self, key: list[str] | None = None, **kwargs: Any
+    ) -> call_result.GetConfiguration:
         """Return all keys, or the requested ones; Easee hides FreeCharging."""
-        all_values = {**self.memory.configuration, **self.memory.read_only_configuration}
+        all_values = {
+            **self.memory.configuration,
+            **self.memory.read_only_configuration,
+        }
         requested = key or list(all_values)
         known = [name for name in requested if name in all_values]
         unknown = [name for name in requested if name not in all_values]
         return call_result.GetConfiguration(
             configuration_key=[
-                {"key": name, "readonly": name in self.memory.read_only_configuration, "value": all_values[name]}
+                {
+                    "key": name,
+                    "readonly": name in self.memory.read_only_configuration,
+                    "value": all_values[name],
+                }
                 for name in known
             ],
             unknown_key=unknown or None,
@@ -96,17 +112,23 @@ class FakeEaseeCharger(ChargePoint):
         return call_result.SetChargingProfile(status="Accepted")
 
     @on(Action.get_composite_schedule)
-    def on_get_composite_schedule(self, connector_id: int, duration: int, **kwargs: Any) -> call_result.GetCompositeSchedule:
+    def on_get_composite_schedule(
+        self, connector_id: int, duration: int, **kwargs: Any
+    ) -> call_result.GetCompositeSchedule:
         """Report the limit of the last profile."""
         if not self.memory.charging_profiles:
             return call_result.GetCompositeSchedule(status="Rejected")
-        schedule = without_decimals(self.memory.charging_profiles[-1]["charging_schedule"])
+        schedule = without_decimals(
+            self.memory.charging_profiles[-1]["charging_schedule"]
+        )
         return call_result.GetCompositeSchedule(
             status="Accepted", connector_id=connector_id, charging_schedule=schedule
         )
 
     @on(Action.trigger_message)
-    def on_trigger_message(self, requested_message: str, **kwargs: Any) -> call_result.TriggerMessage:
+    def on_trigger_message(
+        self, requested_message: str, **kwargs: Any
+    ) -> call_result.TriggerMessage:
         """Accept every trigger."""
         self.memory.triggered.append(requested_message)
         return call_result.TriggerMessage(status="Accepted")
@@ -115,13 +137,17 @@ class FakeEaseeCharger(ChargePoint):
         self.memory.commands.append((action, payload))
 
     @on(Action.change_availability)
-    def on_change_availability(self, connector_id: int, type: str, **kwargs: Any) -> call_result.ChangeAvailability:
+    def on_change_availability(
+        self, connector_id: int, type: str, **kwargs: Any
+    ) -> call_result.ChangeAvailability:
         """Accept."""
         self._remember("ChangeAvailability", type=type)
         return call_result.ChangeAvailability(status="Accepted")
 
     @on(Action.remote_start_transaction)
-    def on_remote_start(self, id_tag: str, **kwargs: Any) -> call_result.RemoteStartTransaction:
+    def on_remote_start(
+        self, id_tag: str, **kwargs: Any
+    ) -> call_result.RemoteStartTransaction:
         """Accept."""
         self._remember("RemoteStartTransaction", id_tag=id_tag)
         return call_result.RemoteStartTransaction(status="Accepted")
@@ -133,7 +159,9 @@ class FakeEaseeCharger(ChargePoint):
         return call_result.Reset(status="Accepted")
 
     @on(Action.unlock_connector)
-    def on_unlock(self, connector_id: int, **kwargs: Any) -> call_result.UnlockConnector:
+    def on_unlock(
+        self, connector_id: int, **kwargs: Any
+    ) -> call_result.UnlockConnector:
         """Unlock."""
         self._remember("UnlockConnector")
         return call_result.UnlockConnector(status="Unlocked")
@@ -146,28 +174,40 @@ class FakeEaseeCharger(ChargePoint):
         return call_result.ClearChargingProfile(status="Accepted")
 
     @on(Action.send_local_list)
-    def on_send_local_list(self, list_version: int, update_type: str, **kwargs: Any) -> call_result.SendLocalList:
+    def on_send_local_list(
+        self, list_version: int, update_type: str, **kwargs: Any
+    ) -> call_result.SendLocalList:
         """Accept."""
         self._remember("SendLocalList", list_version=list_version, **kwargs)
         return call_result.SendLocalList(status="Accepted")
 
     @on(Action.get_local_list_version)
-    def on_get_local_list_version(self, **kwargs: Any) -> call_result.GetLocalListVersion:
+    def on_get_local_list_version(
+        self, **kwargs: Any
+    ) -> call_result.GetLocalListVersion:
         """Version of the last list."""
-        sent = [payload for action, payload in self.memory.commands if action == "SendLocalList"]
-        return call_result.GetLocalListVersion(list_version=sent[-1]["list_version"] if sent else 0)
+        sent = [
+            payload
+            for action, payload in self.memory.commands
+            if action == "SendLocalList"
+        ]
+        return call_result.GetLocalListVersion(
+            list_version=sent[-1]["list_version"] if sent else 0
+        )
 
     async def boot(self) -> call_result.BootNotification:
         """Send a BootNotification."""
         return await self.call(
             call.BootNotification(
-                charge_point_model="Home", charge_point_vendor="Easee", firmware_version="344"
+                charge_point_model="Home",
+                charge_point_vendor="Easee",
+                firmware_version="344",
             )
         )
 
 
 def without_decimals(payload: Any) -> Any:
-    """The ocpp library parses numbers as Decimal, which it cannot serialise again."""
+    """Convert Decimals (parsed by the ocpp library) so the payload can be serialised again."""
     return json.loads(json.dumps(payload, default=float))
 
 
@@ -179,6 +219,6 @@ async def wait_until(condition: Any, timeout: float = 5.0) -> None:
 
 
 def basic_auth(login: str, password: str) -> dict[str, str]:
-    """Authorization header the way the Easee charger sends it."""
+    """Build the authorization header the way the Easee charger sends it."""
     token = base64.b64encode(f"{login}:{password}".encode()).decode()
     return {"Authorization": f"Basic {token}"}

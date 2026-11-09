@@ -17,7 +17,7 @@ MDNS_SUFFIX = ".local"
 
 
 async def suggested_ocpp_url(hass: HomeAssistant) -> str:
-    """Internal HA address as websocket URL; mDNS names are replaced by the IP (chargers can't resolve them)."""
+    """Return the internal HA address as websocket URL, with mDNS names replaced by the IP."""
     try:
         internal = urlsplit(get_url(hass, allow_external=False, allow_cloud=False))
         host = internal.hostname

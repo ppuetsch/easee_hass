@@ -21,8 +21,8 @@ from ocpp.v16.enums import (
     Action,
     AuthorizationStatus,
     AvailabilityType,
-    ChargingProfilePurposeType,
     ChargingProfileKindType,
+    ChargingProfilePurposeType,
     ChargingRateUnitType,
     MessageTrigger,
     RegistrationStatus,
@@ -91,7 +91,7 @@ def new_transaction_id(now: datetime) -> int:
 
 
 def without_decimals(payload: Any) -> Any:
-    """The ocpp library parses numbers as Decimal; HA's JSON responses need plain numbers."""
+    """Convert the Decimals the ocpp library parses into plain numbers for HA's JSON responses."""
     if isinstance(payload, Decimal):
         return float(payload)
     if isinstance(payload, dict):
@@ -190,7 +190,12 @@ class EaseeChargePoint(ChargePoint):
 
     @on(Action.start_transaction)
     def on_start_transaction(
-        self, connector_id: int, id_tag: str, meter_start: int, timestamp: str, **kwargs: Any
+        self,
+        connector_id: int,
+        id_tag: str,
+        meter_start: int,
+        timestamp: str,
+        **kwargs: Any,
     ) -> call_result.StartTransaction:
         """Open a session; the charger stops it again if the card is rejected."""
         id_tag_info = self._authorize(id_tag)
@@ -225,7 +230,9 @@ class EaseeChargePoint(ChargePoint):
         )
 
     @on(Action.firmware_status_notification)
-    def on_firmware_status(self, status: str, **kwargs: Any) -> call_result.FirmwareStatusNotification:
+    def on_firmware_status(
+        self, status: str, **kwargs: Any
+    ) -> call_result.FirmwareStatusNotification:
         """Log firmware updates the charger performs on its own."""
         _LOGGER.info("%s: firmware status %s", self.id, status)
         return call_result.FirmwareStatusNotification()
@@ -246,9 +253,13 @@ class EaseeChargePoint(ChargePoint):
         if allowed:
             _LOGGER.info("%s: RFID card %s accepted", self.id, id_tag)
         else:
-            _LOGGER.warning("%s: RFID card %s rejected (not on the whitelist)", self.id, id_tag)
+            _LOGGER.warning(
+                "%s: RFID card %s rejected (not on the whitelist)", self.id, id_tag
+            )
         self._on_state_changed()
-        status = AuthorizationStatus.accepted if allowed else AuthorizationStatus.invalid
+        status = (
+            AuthorizationStatus.accepted if allowed else AuthorizationStatus.invalid
+        )
         return IdTagInfo(status=status)
 
     async def request(self, payload: Any) -> Any:
@@ -264,11 +275,15 @@ class EaseeChargePoint(ChargePoint):
         if not is_accepted(result.status):
             raise CommandFailedError(f"{type(payload).__name__}: {result.status}")
 
-    async def read_configuration(self, keys: list[str] | None = None) -> dict[str, ConfigurationValue]:
+    async def read_configuration(
+        self, keys: list[str] | None = None
+    ) -> dict[str, ConfigurationValue]:
         """Read configuration keys (all visible keys if none given) into the state."""
         result = await self.request(call.GetConfiguration(key=keys))
         read_values = {
-            entry["key"]: ConfigurationValue(value=entry.get("value"), readonly=bool(entry["readonly"]))
+            entry["key"]: ConfigurationValue(
+                value=entry.get("value"), readonly=bool(entry["readonly"])
+            )
             for entry in result.configuration_key or []
         }
         self.state.configuration.update(read_values)
@@ -284,11 +299,15 @@ class EaseeChargePoint(ChargePoint):
             raise CommandFailedError(f"ChangeConfiguration {key}={value}: {status}")
         previous = self.state.configuration.get(key)
         readonly = previous.readonly if previous is not None else False
-        self.state.configuration[key] = ConfigurationValue(value=value, readonly=readonly)
+        self.state.configuration[key] = ConfigurationValue(
+            value=value, readonly=readonly
+        )
         self._on_state_changed()
         return status
 
-    async def trigger_message(self, message: MessageTrigger, connector_id: int | None = None) -> None:
+    async def trigger_message(
+        self, message: MessageTrigger, connector_id: int | None = None
+    ) -> None:
         """Ask the charger to send a message now."""
         await self.request_accepted(
             call.TriggerMessage(requested_message=message, connector_id=connector_id)
@@ -330,19 +349,25 @@ class EaseeChargePoint(ChargePoint):
             charging_profile_kind=ChargingProfileKindType.absolute,
             charging_schedule=ChargingSchedule(
                 charging_rate_unit=ChargingRateUnitType.amps,
-                charging_schedule_period=[ChargingSchedulePeriod(start_period=0, limit=amps)],
+                charging_schedule_period=[
+                    ChargingSchedulePeriod(start_period=0, limit=amps)
+                ],
                 start_schedule=ocpp_timestamp(schedule_start),
             ),
         )
         await self.request_accepted(
-            call.SetChargingProfile(connector_id=connector_id, cs_charging_profiles=profile)
+            call.SetChargingProfile(
+                connector_id=connector_id, cs_charging_profiles=profile
+            )
         )
 
     async def clear_charging_profiles(self, **criteria: Any) -> None:
         """Remove charging profiles (all of them without criteria)."""
         await self.request(call.ClearChargingProfile(**criteria))
 
-    async def read_composite_limit(self, duration: timedelta = timedelta(minutes=1)) -> float | None:
+    async def read_composite_limit(
+        self, duration: timedelta = timedelta(minutes=1)
+    ) -> float | None:
         """Return the limit currently in force for the vehicle connector."""
         result = await self.request(
             call.GetCompositeSchedule(
@@ -357,11 +382,19 @@ class EaseeChargePoint(ChargePoint):
         self._on_state_changed()
         return limit
 
-    async def set_charging_profile(self, connector_id: int, profile: dict[str, Any]) -> None:
+    async def set_charging_profile(
+        self, connector_id: int, profile: dict[str, Any]
+    ) -> None:
         """Install an arbitrary charging profile (camelCase or snake_case keys)."""
-        await self.request_accepted(call.SetChargingProfile(connector_id=connector_id, cs_charging_profiles=profile))
+        await self.request_accepted(
+            call.SetChargingProfile(
+                connector_id=connector_id, cs_charging_profiles=profile
+            )
+        )
 
-    async def composite_schedule(self, connector_id: int, duration: timedelta) -> dict[str, Any]:
+    async def composite_schedule(
+        self, connector_id: int, duration: timedelta
+    ) -> dict[str, Any]:
         """Return the raw composite schedule of a connector."""
         result = await self.request(
             call.GetCompositeSchedule(
@@ -376,9 +409,14 @@ class EaseeChargePoint(ChargePoint):
             "charging_schedule": without_decimals(result.charging_schedule),
         }
 
-    async def send_local_list(self, version: int, full_update: bool, id_tags: list[IdTag]) -> None:
+    async def send_local_list(
+        self, version: int, full_update: bool, id_tags: list[IdTag]
+    ) -> None:
         """Replace (full) or extend (differential) the charger's local authorization list."""
-        entries = [{"id_tag": tag, "id_tag_info": {"status": AuthorizationStatus.accepted}} for tag in id_tags]
+        entries = [
+            {"id_tag": tag, "id_tag_info": {"status": AuthorizationStatus.accepted}}
+            for tag in id_tags
+        ]
         await self.request_accepted(
             call.SendLocalList(
                 list_version=version,
@@ -394,27 +432,37 @@ class EaseeChargePoint(ChargePoint):
 
     async def change_availability(self, operative: bool) -> None:
         """Enable or disable the charger."""
-        availability = AvailabilityType.operative if operative else AvailabilityType.inoperative
+        availability = (
+            AvailabilityType.operative if operative else AvailabilityType.inoperative
+        )
         result = await self.request(
-            call.ChangeAvailability(connector_id=CONNECTOR_ID_CHARGE_POINT, type=availability)
+            call.ChangeAvailability(
+                connector_id=CONNECTOR_ID_CHARGE_POINT, type=availability
+            )
         )
         if str(result.status) not in {ACCEPTED, "Scheduled"}:
             raise CommandFailedError(f"ChangeAvailability: {result.status}")
 
     async def reset(self, hard: bool) -> None:
         """Restart the charger."""
-        await self.request_accepted(call.Reset(type=ResetType.hard if hard else ResetType.soft))
+        await self.request_accepted(
+            call.Reset(type=ResetType.hard if hard else ResetType.soft)
+        )
 
     async def unlock_connector(self) -> None:
         """Release the cable."""
-        result = await self.request(call.UnlockConnector(connector_id=CONNECTOR_ID_VEHICLE))
+        result = await self.request(
+            call.UnlockConnector(connector_id=CONNECTOR_ID_VEHICLE)
+        )
         if str(result.status) != "Unlocked":
             raise CommandFailedError(f"UnlockConnector: {result.status}")
 
     async def remote_start(self, id_tag: IdTag) -> None:
         """Start charging as if the card had been presented."""
         await self.request_accepted(
-            call.RemoteStartTransaction(id_tag=id_tag, connector_id=CONNECTOR_ID_VEHICLE)
+            call.RemoteStartTransaction(
+                id_tag=id_tag, connector_id=CONNECTOR_ID_VEHICLE
+            )
         )
 
     async def remote_stop(self) -> None:
