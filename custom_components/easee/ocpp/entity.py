@@ -8,13 +8,14 @@ from homeassistant.helpers.dispatcher import async_dispatcher_connect
 from homeassistant.helpers.entity import Entity, EntityDescription
 
 from ..const import DOMAIN
+from .const import OCPP_UNIQUE_ID_MARKER
 from .hub import OcppHub, signal_state_updated
 from .models import ChargePointState, Serial
 
 
 def ocpp_unique_id(serial: Serial, key: str) -> str:
-    """Unique ids are prefixed so they never collide with the cloud entities of the same charger."""
-    return f"{serial}_ocpp_{key}"
+    """Unique ids are marked so they never collide with the cloud entities of the same charger."""
+    return f"{serial}{OCPP_UNIQUE_ID_MARKER}{key}"
 
 
 class OcppEntity(Entity):

@@ -6,11 +6,13 @@ from collections.abc import Callable, Iterable
 
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
+from homeassistant.helpers import entity_registry as er
 from homeassistant.helpers.entity import Entity
 from homeassistant.helpers.entity_platform import AddConfigEntryEntitiesCallback
 
 from .const import (
     CONF_ALLOWED_ID_TAGS,
+    OCPP_UNIQUE_ID_MARKER,
     CONF_OCPP_PASSWORD,
     CONF_SERIAL,
     SUBENTRY_TYPE_OCPP_CHARGER,
@@ -43,6 +45,7 @@ async def async_setup_ocpp_hub(hass: HomeAssistant, entry: ConfigEntry) -> OcppH
     whitelist = IdTagWhitelist(entry.options.get(CONF_ALLOWED_ID_TAGS, []))
     hub = OcppHub(hass, ocpp_charger_configs(entry), whitelist)
     await hub.async_load()
+    remove_entities_of_removed_chargers(hass, entry, set(hub.serials()))
     hass.data[HUB_DATA_KEY] = hub
     return hub
 
@@ -59,15 +62,33 @@ def async_add_ocpp_entities(
     async_add_entities: AddConfigEntryEntitiesCallback,
     entities_for_charger: Callable[[OcppHub, Serial], Iterable[Entity]],
 ) -> None:
-    """Add the OCPP entities of every charger, each assigned to its subentry."""
+    """Add the OCPP entities of every charger.
+
+    They deliberately belong to no subentry: since HA 2026.11 a device belongs to exactly
+    one subentry, and the cloud entities of the same charger device belong to none.
+    Mixing both moves the device back and forth and HA deletes the other side's entities.
+    """
     hub = get_ocpp_hub(hass)
     if hub is None:
         return
     for serial in hub.serials():
-        async_add_entities(
-            entities_for_charger(hub, serial),
-            config_subentry_id=hub.config(serial).subentry_id,
-        )
+        async_add_entities(entities_for_charger(hub, serial))
+
+
+def is_ocpp_unique_id_of_other_charger(unique_id: str, configured_serials: set[Serial]) -> bool:
+    """Return True for an OCPP entity whose charger no longer has a subentry."""
+    serial, separator, _ = unique_id.partition(OCPP_UNIQUE_ID_MARKER)
+    return bool(separator) and serial not in configured_serials
+
+
+def remove_entities_of_removed_chargers(
+    hass: HomeAssistant, entry: ConfigEntry, configured_serials: set[Serial]
+) -> None:
+    """Delete OCPP entities of chargers whose subentry was removed (HA can't do it, see above)."""
+    registry = er.async_get(hass)
+    for registry_entry in er.async_entries_for_config_entry(registry, entry.entry_id):
+        if is_ocpp_unique_id_of_other_charger(registry_entry.unique_id, configured_serials):
+            registry.async_remove(registry_entry.entity_id)
 
 
 def get_ocpp_hub(hass: HomeAssistant) -> OcppHub | None:

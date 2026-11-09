@@ -39,7 +39,22 @@ async def test_entities_only_for_chargers_with_subentry(hass: HomeAssistant, loa
     device = dr.async_get(hass).async_get(power.device_id)
     assert device is not None
     assert (DOMAIN, OCPP_SERIAL) in device.identifiers
-    assert power.config_subentry_id is not None
+    # HA 2026.11: a device belongs to one subentry; OCPP entities share the cloud device,
+    # so they must not belong to the OCPP subentry or HA deletes one side's entities.
+    assert power.config_subentry_id is None
+
+
+async def test_removing_the_subentry_removes_the_ocpp_entities(
+    hass: HomeAssistant, loaded_entry: MockConfigEntry
+) -> None:
+    """Without a subentry the OCPP entities of that charger are deleted."""
+    power_entity_id = entity_id_of(hass, "sensor", OCPP_SERIAL, "power")
+    subentry_id = next(iter(loaded_entry.subentries))
+
+    assert hass.config_entries.async_remove_subentry(loaded_entry, subentry_id)
+    await hass.async_block_till_done()
+
+    assert er.async_get(hass).async_get(power_entity_id) is None
 
 
 async def test_unavailable_until_connected(hass: HomeAssistant, loaded_entry: MockConfigEntry) -> None:

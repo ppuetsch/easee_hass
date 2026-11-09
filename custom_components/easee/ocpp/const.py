@@ -13,6 +13,9 @@ CONF_OCPP_PASSWORD: Final = "ocpp_password"
 CONF_OCPP_URL: Final = "ocpp_url"
 CONF_ALLOWED_ID_TAGS: Final = "allowed_id_tags"
 
+# unique_id = <serial>_ocpp_<key>; the marker keeps them apart from the cloud entities.
+OCPP_UNIQUE_ID_MARKER: Final = "_ocpp_"
+
 CONNECTOR_ID_CHARGE_POINT: Final = 0
 CONNECTOR_ID_VEHICLE: Final = 1
 
